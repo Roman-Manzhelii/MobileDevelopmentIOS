@@ -71,10 +71,6 @@ private struct ShuffleStackView: UIViewRepresentable {
         stack.backgroundColor = .clear
         stack.dataSource = context.coordinator
         stack.delegate = context.coordinator
-
-        // Important: show only one card at a time
-        stack.numberOfVisibleCards = 1
-
         stack.reloadData()
         return stack
     }
@@ -124,7 +120,7 @@ private struct ShuffleStackView: UIViewRepresentable {
 
         private func makeCardContent(from model: DemoCard) -> UIView {
             let root = UIView()
-            root.backgroundColor = model.color.withAlphaComponent(0.12)
+            root.backgroundColor = model.color.withAlphaComponent(1)
             root.layer.cornerRadius = 24
             root.layer.masksToBounds = true
 
