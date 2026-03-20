@@ -6,9 +6,9 @@ struct ContentView: View {
     @State private var lastAction = "No swipes yet"
 
     private let cards: [DemoCard] = [
-        .init(title: "Swift", subtitle: "swipe left", color: .systemBlue),
-        .init(title: "UIKit", subtitle: "swipe right", color: .systemPurple),
-        .init(title: "Shuffle", subtitle: "swipe down", color: .systemOrange)
+        .init(title: "Swift", subtitle: "Swipe left or right", color: .systemBlue),
+        .init(title: "UIKit", subtitle: "Shuffle is a UIKit-based card stack", color: .systemPurple),
+        .init(title: "Shuffle", subtitle: "Manual swipe works out of the box", color: .systemOrange)
     ]
 
     var body: some View {
@@ -29,18 +29,22 @@ struct ContentView: View {
                         dirText = "left"
                     case .right:
                         dirText = "right"
+                    case .up:
+                        dirText = "up"
+                    case .down:
+                        dirText = "down"
                     default:
-                        dirText = "other direction"
+                        dirText = "unknown"
                     }
 
-                    lastAction = "Card \(index + 1): swipe \(dirText)"
+                    lastAction = "Card \(index + 1) swiped \(dirText)"
                 },
                 onFinished: {
-                    lastAction = "All done"
+                    lastAction = "All cards were swiped"
                 }
             )
             .frame(height: 520)
-            .padding(.horizontal)
+            .padding(.horizontal, 24)
         }
         .padding()
     }
@@ -67,6 +71,10 @@ private struct ShuffleStackView: UIViewRepresentable {
         stack.backgroundColor = .clear
         stack.dataSource = context.coordinator
         stack.delegate = context.coordinator
+
+        // Important: show only one card at a time
+        stack.numberOfVisibleCards = 1
+
         stack.reloadData()
         return stack
     }
@@ -105,6 +113,7 @@ private struct ShuffleStackView: UIViewRepresentable {
 
             let leftOverlay = makeOverlay(text: "NOPE", color: .systemRed, alignment: .left)
             let rightOverlay = makeOverlay(text: "LIKE", color: .systemGreen, alignment: .right)
+
             card.setOverlays([
                 .left: leftOverlay,
                 .right: rightOverlay
@@ -115,19 +124,21 @@ private struct ShuffleStackView: UIViewRepresentable {
 
         private func makeCardContent(from model: DemoCard) -> UIView {
             let root = UIView()
-            root.backgroundColor = model.color.withAlphaComponent(0.14)
+            root.backgroundColor = model.color.withAlphaComponent(0.12)
             root.layer.cornerRadius = 24
             root.layer.masksToBounds = true
 
             let icon = UIImageView(image: UIImage(systemName: "sparkles"))
             icon.tintColor = model.color
             icon.preferredSymbolConfiguration = UIImage.SymbolConfiguration(pointSize: 42, weight: .medium)
+            icon.translatesAutoresizingMaskIntoConstraints = false
 
             let titleLabel = UILabel()
             titleLabel.text = model.title
-            titleLabel.font = .systemFont(ofSize: 28, weight: .bold)
+            titleLabel.font = .systemFont(ofSize: 30, weight: .bold)
             titleLabel.textAlignment = .center
             titleLabel.numberOfLines = 0
+            titleLabel.translatesAutoresizingMaskIntoConstraints = false
 
             let subtitleLabel = UILabel()
             subtitleLabel.text = model.subtitle
@@ -135,11 +146,13 @@ private struct ShuffleStackView: UIViewRepresentable {
             subtitleLabel.textColor = .secondaryLabel
             subtitleLabel.textAlignment = .center
             subtitleLabel.numberOfLines = 0
+            subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
 
             let stack = UIStackView(arrangedSubviews: [icon, titleLabel, subtitleLabel])
             stack.axis = .vertical
             stack.alignment = .center
-            stack.spacing = 16
+            stack.distribution = .fill
+            stack.spacing = 18
             stack.translatesAutoresizingMaskIntoConstraints = false
 
             root.addSubview(stack)
