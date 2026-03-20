@@ -3,7 +3,7 @@ import UIKit
 import Shuffle
 
 struct ContentView: View {
-    @State private var lastAction = "Ще не було свайпу"
+    @State private var lastAction = "No swipes yet"
 
     private let cards: [DemoCard] = [
         .init(title: "Swift", subtitle: "swipe left", color: .systemBlue),
