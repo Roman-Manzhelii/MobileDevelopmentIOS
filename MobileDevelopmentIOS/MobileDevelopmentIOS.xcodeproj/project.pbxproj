@@ -6,6 +6,11 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		3FC3B4F22F6D7B85003F2D5B /* Shuffle in Frameworks */ = {isa = PBXBuildFile; productRef = 3FC3B4F12F6D7B85003F2D5B /* Shuffle */; };
+		3FC3B4F42F6D7DB7003F2D5B /* Shuffle in Frameworks */ = {isa = PBXBuildFile; productRef = 3FC3B4F32F6D7DB7003F2D5B /* Shuffle */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		3F7888AC2F68223D00DBF2DF /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -52,6 +57,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3FC3B4F42F6D7DB7003F2D5B /* Shuffle in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -59,6 +65,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3FC3B4F22F6D7B85003F2D5B /* Shuffle in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -78,6 +85,7 @@
 				3F7888A02F68223B00DBF2DF /* MobileDevelopmentIOS */,
 				3F7888AE2F68223D00DBF2DF /* MobileDevelopmentIOSTests */,
 				3F7888B82F68223D00DBF2DF /* MobileDevelopmentIOSUITests */,
+				3FC3B4F02F6D7B85003F2D5B /* Frameworks */,
 				3F78889F2F68223B00DBF2DF /* Products */,
 			);
 			sourceTree = "<group>";
@@ -90,6 +98,13 @@
 				3F7888B52F68223D00DBF2DF /* MobileDevelopmentIOSUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		3FC3B4F02F6D7B85003F2D5B /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -112,6 +127,7 @@
 			);
 			name = MobileDevelopmentIOS;
 			packageProductDependencies = (
+				3FC3B4F32F6D7DB7003F2D5B /* Shuffle */,
 			);
 			productName = MobileDevelopmentIOS;
 			productReference = 3F78889E2F68223B00DBF2DF /* MobileDevelopmentIOS.app */;
@@ -135,6 +151,7 @@
 			);
 			name = MobileDevelopmentIOSTests;
 			packageProductDependencies = (
+				3FC3B4F12F6D7B85003F2D5B /* Shuffle */,
 			);
 			productName = MobileDevelopmentIOSTests;
 			productReference = 3F7888AB2F68223D00DBF2DF /* MobileDevelopmentIOSTests.xctest */;
@@ -195,6 +212,9 @@
 			);
 			mainGroup = 3F7888952F68223B00DBF2DF;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				3FC3B4EF2F6D7371003F2D5B /* XCLocalSwiftPackageReference "Shuffle-0.5.0" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 3F78889F2F68223B00DBF2DF /* Products */;
 			projectDirPath = "";
@@ -412,12 +432,16 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.JR.MobileDevelopmentIOS;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -445,12 +469,16 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.JR.MobileDevelopmentIOS;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};
@@ -461,16 +489,20 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.JR.MobileDevelopmentIOSTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/MobileDevelopmentIOS.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/MobileDevelopmentIOS";
 			};
 			name = Debug;
@@ -482,16 +514,20 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.JR.MobileDevelopmentIOSTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/MobileDevelopmentIOS.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/MobileDevelopmentIOS";
 			};
 			name = Release;
@@ -574,6 +610,26 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		3FC3B4EF2F6D7371003F2D5B /* XCLocalSwiftPackageReference "Shuffle-0.5.0" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "Shuffle-0.5.0";
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		3FC3B4F12F6D7B85003F2D5B /* Shuffle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3FC3B4EF2F6D7371003F2D5B /* XCLocalSwiftPackageReference "Shuffle-0.5.0" */;
+			productName = Shuffle;
+		};
+		3FC3B4F32F6D7DB7003F2D5B /* Shuffle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3FC3B4EF2F6D7371003F2D5B /* XCLocalSwiftPackageReference "Shuffle-0.5.0" */;
+			productName = Shuffle;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 3F7888962F68223B00DBF2DF /* Project object */;
 }
