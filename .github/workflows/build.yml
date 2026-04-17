@@ -1,0 +1,46 @@
+name: Build iOS
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_16.3.app/Contents/Developer
+
+      - name: Resolve packages
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -project MobileDevelopmentIOS/MobileDevelopmentIOS.xcodeproj \
+            -scheme MobileDevelopmentIOS
+
+      - name: Build
+        run: |
+          xcodebuild build \
+            -project MobileDevelopmentIOS/MobileDevelopmentIOS.xcodeproj \
+            -scheme MobileDevelopmentIOS \
+            -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.4' \
+            -configuration Debug \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            | xcpretty && exit ${PIPESTATUS[0]}
+
+      - name: Run Tests
+        run: |
+          xcodebuild test \
+            -project MobileDevelopmentIOS/MobileDevelopmentIOS.xcodeproj \
+            -scheme MobileDevelopmentIOS \
+            -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.4' \
+            -configuration Debug \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            | xcpretty && exit ${PIPESTATUS[0]}
