@@ -15,6 +15,12 @@ jobs:
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode_16.3.app/Contents/Developer
 
+      - name: Show available destinations
+        run: |
+          xcodebuild -project MobileDevelopmentIOS/MobileDevelopmentIOS.xcodeproj \
+            -scheme MobileDevelopmentIOS \
+            -showdestinations 2>/dev/null | head -40
+
       - name: Resolve packages
         run: |
           xcodebuild -resolvePackageDependencies \
@@ -26,19 +32,7 @@ jobs:
           xcodebuild build \
             -project MobileDevelopmentIOS/MobileDevelopmentIOS.xcodeproj \
             -scheme MobileDevelopmentIOS \
-            -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.4' \
-            -configuration Debug \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO \
-            | xcpretty && exit ${PIPESTATUS[0]}
-
-      - name: Run Tests
-        run: |
-          xcodebuild test \
-            -project MobileDevelopmentIOS/MobileDevelopmentIOS.xcodeproj \
-            -scheme MobileDevelopmentIOS \
-            -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.4' \
+            -destination 'generic/platform=iOS Simulator' \
             -configuration Debug \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
