@@ -13,13 +13,10 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode_16.3.app/Contents/Developer
+        run: sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
 
-      - name: Show available destinations
-        run: |
-          xcodebuild -project MobileDevelopmentIOS/MobileDevelopmentIOS.xcodeproj \
-            -scheme MobileDevelopmentIOS \
-            -showdestinations 2>/dev/null | head -40
+      - name: List available simulators
+        run: xcrun simctl list devices available | head -30
 
       - name: Resolve packages
         run: |
@@ -32,7 +29,7 @@ jobs:
           xcodebuild build \
             -project MobileDevelopmentIOS/MobileDevelopmentIOS.xcodeproj \
             -scheme MobileDevelopmentIOS \
-            -destination 'generic/platform=iOS' \
+            -destination 'generic/platform=iOS Simulator' \
             -configuration Debug \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
