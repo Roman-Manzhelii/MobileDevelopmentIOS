@@ -38,6 +38,7 @@
 		3FA463EA2F9243F800909750 /* Exceptions for "MobileDevelopmentIOS" folder in "MobileDevelopmentIOS" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				Screens/Detector/DetectorView.swift,
 			);
 			target = 3F78889D2F68223B00DBF2DF /* MobileDevelopmentIOS */;
 		};
