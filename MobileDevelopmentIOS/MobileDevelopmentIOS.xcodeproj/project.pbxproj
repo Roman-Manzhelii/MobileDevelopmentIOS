@@ -34,9 +34,22 @@
 		3F7888B52F68223D00DBF2DF /* MobileDevelopmentIOSUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MobileDevelopmentIOSUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		3FA463EA2F9243F800909750 /* Exceptions for "MobileDevelopmentIOS" folder in "MobileDevelopmentIOS" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Screens/Home/HomeView.swift,
+			);
+			target = 3F78889D2F68223B00DBF2DF /* MobileDevelopmentIOS */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		3F7888A02F68223B00DBF2DF /* MobileDevelopmentIOS */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				3FA463EA2F9243F800909750 /* Exceptions for "MobileDevelopmentIOS" folder in "MobileDevelopmentIOS" target */,
+			);
 			path = MobileDevelopmentIOS;
 			sourceTree = "<group>";
 		};
