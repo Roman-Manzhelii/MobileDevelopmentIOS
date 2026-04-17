@@ -32,7 +32,7 @@ jobs:
           xcodebuild build \
             -project MobileDevelopmentIOS/MobileDevelopmentIOS.xcodeproj \
             -scheme MobileDevelopmentIOS \
-            -destination 'generic/platform=iOS Simulator' \
+            -destination 'generic/platform=iOS' \
             -configuration Debug \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
