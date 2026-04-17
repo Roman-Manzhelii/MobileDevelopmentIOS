@@ -37,4 +37,8 @@ jobs:
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
-            | xcpretty && exit ${PIPESTATUS[0]}
+            2>&1 | tee build.log | xcpretty; exit ${PIPESTATUS[0]}
+
+      - name: Show full errors on failure
+        if: failure()
+        run: grep -A 5 -E '(error:|warning:.*error|failed)' build.log || tail -100 build.log
