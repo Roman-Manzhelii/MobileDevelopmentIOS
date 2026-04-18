@@ -24,9 +24,9 @@ struct MainView: View {
                     case .game:
                         Text("Game View")
                     case .history:
-                        Text("History View")
+                        HistoryView()
                     case .profile:
-                        Text("Profile View")
+                        ProfileView()
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
