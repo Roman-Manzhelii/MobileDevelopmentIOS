@@ -24,9 +24,12 @@ struct HomeView: View {
             VStack(alignment: .leading, spacing: 14) {
                 Text("👋 Welcome back")
                     .font(.title2.weight(.bold))
+                    .foregroundStyle(Color.ffTextPrimary)
                     .padding(.top, 8)
 
-                Divider()
+                Rectangle()
+                    .fill(Color.ffBorder)
+                    .frame(height: 1)
 
                 SectionLabel(title: "Quick Actions")
                 HStack(spacing: 10) {
@@ -52,4 +55,5 @@ struct HomeView: View {
 
 #Preview {
     HomeView()
+        .background(Color.ffBackground)
 }

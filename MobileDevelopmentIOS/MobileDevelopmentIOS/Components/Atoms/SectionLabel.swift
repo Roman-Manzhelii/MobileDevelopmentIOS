@@ -13,7 +13,7 @@ struct SectionLabel: View {
     var body: some View {
         Text(title)
             .font(.caption.weight(.semibold))
-            .foregroundStyle(.secondary)
+            .foregroundStyle(Color.ffTextMuted)
             .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
@@ -21,4 +21,5 @@ struct SectionLabel: View {
 #Preview {
     SectionLabel(title: "Quick Actions")
         .padding()
+        .background(Color.ffBackground)
 }

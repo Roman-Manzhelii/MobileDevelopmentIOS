@@ -15,21 +15,22 @@ struct HistoryRow: View {
     var body: some View {
         HStack(spacing: 10) {
             RoundedRectangle(cornerRadius: 10)
-                .fill(Color(.tertiarySystemFill))
+                .fill(Color.ffElevated)
                 .frame(width: 44, height: 44)
                 .overlay(
                     Image(systemName: "photo")
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.ffTextMuted)
                 )
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(filename)
                     .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Color.ffTextPrimary)
                     .lineLimit(1)
 
                 Text(timestamp)
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.ffTextMuted)
                     .lineLimit(1)
             }
 
@@ -37,14 +38,20 @@ struct HistoryRow: View {
 
             Text(badgeText)
                 .font(.caption2.weight(.bold))
+                .foregroundStyle(Color.ffTextPrimary)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 5)
-                .background(Color(.systemGray5), in: Capsule())
+                .background(Color.ffElevated, in: Capsule())
+                .overlay(Capsule().strokeBorder(Color.ffBorder, lineWidth: 1))
         }
         .padding(10)
         .background(
             RoundedRectangle(cornerRadius: 14)
-                .fill(Color(.secondarySystemBackground))
+                .fill(Color.ffCard)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14)
+                        .strokeBorder(Color.ffBorder, lineWidth: 1)
+                )
         )
     }
 }
@@ -52,4 +59,5 @@ struct HistoryRow: View {
 #Preview {
     HistoryRow(filename: "Image_001.jpg", timestamp: "Today, 2:14 PM", badgeText: "85% AI")
         .padding()
+        .background(Color.ffBackground)
 }

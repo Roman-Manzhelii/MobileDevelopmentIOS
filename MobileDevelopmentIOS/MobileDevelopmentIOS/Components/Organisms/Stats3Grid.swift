@@ -32,4 +32,5 @@ struct StatItem: Identifiable {
         StatItem(value: "3🔥", label: "Day streak")
     ])
     .padding()
+    .background(Color.ffBackground)
 }

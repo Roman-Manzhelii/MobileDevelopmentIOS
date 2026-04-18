@@ -15,11 +15,11 @@ struct StatBox: View {
         VStack(spacing: 6) {
             Text(value)
                 .font(.title3.weight(.bold))
-                .foregroundStyle(.primary)
+                .foregroundStyle(Color.ffTextPrimary)
 
             Text(label)
                 .font(.caption2)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.ffTextMuted)
                 .multilineTextAlignment(.center)
                 .lineLimit(2)
         }
@@ -27,7 +27,11 @@ struct StatBox: View {
         .padding(.horizontal, 8)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color(.secondarySystemBackground))
+                .fill(Color.ffCard)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .strokeBorder(Color.ffBorder, lineWidth: 1)
+                )
         )
     }
 }
@@ -35,4 +39,5 @@ struct StatBox: View {
 #Preview {
     StatBox(value: "74%", label: "Game accuracy")
         .padding()
+        .background(Color.ffBackground)
 }

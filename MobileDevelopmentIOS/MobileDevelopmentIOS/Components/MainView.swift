@@ -20,7 +20,7 @@ struct MainView: View {
                     case .home:
                         HomeView()
                     case .detector:
-                        Text("Detector View")
+                        DetectorView()
                     case .game:
                         Text("Game View")
                     case .history:
