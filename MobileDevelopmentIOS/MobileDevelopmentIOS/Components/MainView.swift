@@ -26,7 +26,7 @@ struct MainView: View {
                     case .history:
                         HistoryView()
                     case .profile:
-                        Text("Profile View")
+                        ProfileView()
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
