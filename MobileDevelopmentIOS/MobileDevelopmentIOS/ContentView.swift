@@ -43,7 +43,7 @@ struct ContentView: View {
                     lastAction = "All cards were swiped"
                 }
             )
-            .frame(height: 520)
+            .frame(height: .infinity)
             .padding(.horizontal, 24)
         }
         .padding()

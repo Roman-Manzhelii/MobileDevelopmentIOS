@@ -77,8 +77,6 @@ struct DetectorView: View {
     }
 }
 
-// MARK: - UIImagePickerController bridge
-
 private struct ImagePicker: UIViewControllerRepresentable {
     @Binding var image: UIImage?
     @Binding var isPresented: Bool

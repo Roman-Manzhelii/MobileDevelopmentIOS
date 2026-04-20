@@ -15,21 +15,25 @@ struct MainView: View {
             
             VStack(spacing: 0) {
                 TopBar()
-                Group {
-                    switch selectedTab {
-                    case .home:
-                        HomeView()
-                    case .detector:
-                        DetectorView()
-                    case .game:
-                        Text("Game View")
-                    case .history:
-                        HistoryView()
-                    case .profile:
-                        ProfileView()
+                VStack{
+                    Group {
+                        switch selectedTab {
+                        case .home:
+                            HomeView()
+                        case .detector:
+                            DetectorView()
+                        case .game:
+                            Text("Game View")
+                        case .history:
+                            HistoryView()
+                        case .profile:
+                            ProfileView()
+                        }
+                        
                     }
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }.frame(height:.infinity)
+
+                .frame(maxWidth: .infinity)
                 TabBar(selectedTab: $selectedTab)
             }
         }

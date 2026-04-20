@@ -19,6 +19,10 @@ enum FFTab {
 struct TabBar : View {
     @Binding var selectedTab: FFTab
     var body: some View {
+        VStack(spacing: 0){
+            Rectangle()
+                .fill(Color.ffBorder)
+                .frame(height: 0.5)
             HStack {
                 ForEach([FFTab.home, .detector, .game, .history, .profile], id: \.self) { tab in
                     Button(action: { selectedTab = tab }) {
@@ -36,7 +40,7 @@ struct TabBar : View {
                                 .font(.caption2)
                         }
                         .foregroundColor(selectedTab == tab ? .ffGold : .ffTextMuted)
-                        .frame(maxWidth: .infinity)
+                        .frame(maxWidth: .infinity, maxHeight:20)
                     }
                 }
             }
@@ -44,6 +48,8 @@ struct TabBar : View {
             .padding(.bottom, 20)
             .background(Color.ffBackground)
         }
+        }
+            
 }
 
 func label(for tab: FFTab) -> String {
