@@ -14,6 +14,8 @@ struct DetectorView: View {
     @State private var selectedImage: UIImage?
     @State private var selectedImageData: Data?
     @State private var selectedImageFileName: String?
+    @State private var showSourcePicker = false
+    @State private var showPhotoLibrary = false
     @State private var showCamera = false
     @State private var isAnalyzing = false
     @State private var analysisResult: AiclipseCheckResponse?
@@ -40,15 +42,15 @@ struct DetectorView: View {
             SectionLabel(title: "Image Picker")
 
             HStack(spacing: 10) {
-                PhotosPicker(selection: $photoItem, matching: .images) {
+                Button {
+                    showPhotoLibrary = true
+                } label: {
                     PickerCard(emoji: "🖼", title: "Photo Library", footnote: "● iOS PHPicker")
                 }
                 .buttonStyle(.plain)
 
                 Button {
-                    if UIImagePickerController.isSourceTypeAvailable(.camera) {
-                        showCamera = true
-                    }
+                    presentCameraIfAvailable()
                 } label: {
                     PickerCard(emoji: "📷", title: "Take Photo", footnote: "● Camera capture")
                 }
@@ -63,7 +65,11 @@ struct DetectorView: View {
                 selectedImage: selectedImage,
                 analysisResult: analysisResult,
                 isAnalyzing: isAnalyzing,
-                errorMessage: analysisError
+                errorMessage: analysisError,
+                onPlaceholderTap: {
+                    showSourcePicker = true
+                },
+                onClearTap: selectedImage != nil && !isAnalyzing ? clearSelection : nil
             )
 
             PrimaryButton(
@@ -81,6 +87,22 @@ struct DetectorView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .padding(.horizontal, 18)
         .padding(.bottom, 20)
+        .photosPicker(isPresented: $showPhotoLibrary, selection: $photoItem, matching: .images)
+        .confirmationDialog("Choose image source", isPresented: $showSourcePicker, titleVisibility: .visible) {
+            Button("Photo Library") {
+                showPhotoLibrary = true
+            }
+
+            if UIImagePickerController.isSourceTypeAvailable(.camera) {
+                Button("Take Photo") {
+                    showCamera = true
+                }
+            }
+
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Upload an image from your photo library or take a new photo.")
+        }
         .onChange(of: photoItem) { _, new in
             guard let new else { return }
             Task {
@@ -119,6 +141,20 @@ struct DetectorView: View {
     private func resetAnalysisState() {
         analysisResult = nil
         analysisError = nil
+    }
+
+    private func clearSelection() {
+        photoItem = nil
+        selectedImage = nil
+        selectedImageData = nil
+        selectedImageFileName = nil
+        resetAnalysisState()
+    }
+
+    private func presentCameraIfAvailable() {
+        if UIImagePickerController.isSourceTypeAvailable(.camera) {
+            showCamera = true
+        }
     }
 
     @MainActor

@@ -40,6 +40,8 @@ struct ResultsCard: View {
     let analysisResult: AiclipseCheckResponse?
     let isAnalyzing: Bool
     let errorMessage: String?
+    let onPlaceholderTap: () -> Void
+    let onClearTap: (() -> Void)?
 
     var body: some View {
         Group {
@@ -120,29 +122,49 @@ struct ResultsCard: View {
                             .foregroundStyle(Color.ffTextMuted)
                     }
                 }
-            } else {
-                VStack(spacing: 12) {
-                    Image(systemName: "arrow.up.circle.fill")
-                        .font(.system(size: 44))
-                        .foregroundStyle(Color.ffTextMuted)
-
-                    Text("[ Upload an image to begin ]")
-                        .font(.subheadline)
-                        .foregroundStyle(Color.ffTextPrimary)
-
-                    Text("No image selected yet")
-                        .font(.caption2)
-                        .foregroundStyle(Color.ffTextMuted)
-
-                    if let errorMessage {
-                        Text(errorMessage)
-                            .font(.caption)
-                            .foregroundStyle(Color.ffRed)
-                            .multilineTextAlignment(.center)
+                .overlay(alignment: .topTrailing) {
+                    if let onClearTap {
+                        Button(action: onClearTap) {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundStyle(Color.ffTextPrimary)
+                                .frame(width: 28, height: 28)
+                                .background(Color.ffBackground.opacity(0.92), in: Circle())
+                                .overlay(
+                                    Circle()
+                                        .strokeBorder(Color.ffBorder, lineWidth: 1)
+                                )
+                        }
+                        .buttonStyle(.plain)
+                        .padding(8)
                     }
                 }
-                .frame(maxWidth: .infinity)
-                .frame(minHeight: 220)
+            } else {
+                Button(action: onPlaceholderTap) {
+                    VStack(spacing: 12) {
+                        Image(systemName: "arrow.up.circle.fill")
+                            .font(.system(size: 44))
+                            .foregroundStyle(Color.ffTextMuted)
+
+                        Text("[ Upload an image to begin ]")
+                            .font(.subheadline)
+                            .foregroundStyle(Color.ffTextPrimary)
+
+                        Text("Tap to choose Photo Library or Camera")
+                            .font(.caption2)
+                            .foregroundStyle(Color.ffTextMuted)
+
+                        if let errorMessage {
+                            Text(errorMessage)
+                                .font(.caption)
+                                .foregroundStyle(Color.ffRed)
+                                .multilineTextAlignment(.center)
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(minHeight: 220)
+                }
+                .buttonStyle(.plain)
             }
         }
         .padding(12)
@@ -257,7 +279,9 @@ private struct AiclipseProbabilityBar: View {
         selectedImage: nil,
         analysisResult: nil,
         isAnalyzing: false,
-        errorMessage: nil
+        errorMessage: nil,
+        onPlaceholderTap: {},
+        onClearTap: nil
     )
     .padding()
     .background(Color.ffBackground)
