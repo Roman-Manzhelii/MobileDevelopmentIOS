@@ -2,7 +2,7 @@ import Foundation
 
 @Observable 
 class GameManager {
-    var cards: [GameCard] = []
+    var cards: [GameCardData] = []
     
     init() {
         loadCards()
@@ -17,7 +17,7 @@ class GameManager {
         do {
             let data = try Data(contentsOf: url)
             let decoder = JSONDecoder()
-            self.cards = try decoder.decode([GameCard].self, from: data)
+            self.cards = try decoder.decode([GameCardData].self, from: data)
         } catch {
             print("Failed to decode JSON \(error)")
         }

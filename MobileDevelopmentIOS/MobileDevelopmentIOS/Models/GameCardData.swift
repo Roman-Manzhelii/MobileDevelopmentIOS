@@ -1,6 +1,6 @@
 import Foundation
 
-struct GameCard: Codable, Identifiable {
+struct GameCardData: Codable, Identifiable {
     let id: String
     let imageName: String
     let isReal: Bool
