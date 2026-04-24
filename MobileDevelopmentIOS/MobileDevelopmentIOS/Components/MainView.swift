@@ -19,7 +19,7 @@ struct MainView: View {
                     Group {
                         switch selectedTab {
                         case .home:
-                            HomeView()
+                            HomeView(selectedTab: $selectedTab)
                         case .detector:
                             DetectorView()
                         case .game:
