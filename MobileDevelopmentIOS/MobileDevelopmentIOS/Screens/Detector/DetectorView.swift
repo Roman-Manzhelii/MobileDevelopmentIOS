@@ -240,7 +240,8 @@ private struct PhotoLibraryPicker: UIViewControllerRepresentable {
     func makeUIViewController(context: Context) -> PHPickerViewController {
         var configuration = PHPickerConfiguration()
         configuration.filter = .images
-        configuration.selectionLimit = 0
+        configuration.selectionLimit = 1
+        configuration.selection = .default
 
         let picker = PHPickerViewController(configuration: configuration)
         picker.delegate = context.coordinator
