@@ -20,11 +20,13 @@ struct DetectorView: View {
     @State private var isAnalyzing = false
     @State private var analysisResult: AiclipseCheckResponse?
     @State private var analysisError: String?
+    @State private var activeAnalysisID = UUID()
 
     private let apiService = AiclipseAPIService.shared
+
     private var clearTapAction: (() -> Void)? {
         guard selectedImage != nil, !isAnalyzing else { return nil }
-        return { clearSelection() }
+        return clearSelection
     }
 
     var body: some View {
@@ -49,33 +51,8 @@ struct DetectorView: View {
                 Text("AI Detector")
                     .font(.title2.weight(.bold))
                     .foregroundStyle(Color.ffTextPrimary)
-                Text("Upload & Analyze")
-                    .font(.subheadline)
-                    .foregroundStyle(Color.ffTextMuted)
             }
             .padding(.top, 8)
-
-            Rectangle()
-                .fill(Color.ffBorder)
-                .frame(height: 1)
-
-            SectionLabel(title: "Image Picker")
-
-            HStack(spacing: 10) {
-                Button {
-                    showPhotoLibrary = true
-                } label: {
-                    PickerCard(emoji: "🖼", title: "Photo Library", footnote: "● iOS PHPicker")
-                }
-                .buttonStyle(.plain)
-
-                Button {
-                    presentCameraIfAvailable()
-                } label: {
-                    PickerCard(emoji: "📷", title: "Take Photo", footnote: "● Camera capture")
-                }
-                .buttonStyle(.plain)
-            }
 
             Rectangle()
                 .fill(Color.ffBorder)
@@ -91,18 +68,7 @@ struct DetectorView: View {
                 },
                 onClearTap: clearTapAction
             )
-
-            PrimaryButton(
-                title: isAnalyzing ? "Analyzing..." : "Analyze",
-                isEnabled: selectedImageData != nil && !isAnalyzing
-            ) {
-                Task {
-                    await analyzeCurrentImage()
-                }
-            }
-            .padding(.top, 4)
-
-            Spacer(minLength: 0)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .padding(.horizontal, 18)
@@ -126,12 +92,14 @@ struct DetectorView: View {
 
     private var cameraSheet: some View {
         ImagePicker(
-            image: $selectedImage,
-            imageData: $selectedImageData,
-            imageFileName: $selectedImageFileName,
             isPresented: $showCamera,
             sourceType: .camera,
-            onImageChange: resetAnalysisState
+            onImagePicked: { image, imageData, fileName in
+                setSelectedImage(image, uploadData: imageData, fileName: fileName)
+                Task {
+                    await analyzeCurrentImage()
+                }
+            }
         )
     }
 
@@ -148,17 +116,13 @@ struct DetectorView: View {
     }
 
     private func clearSelection() {
+        activeAnalysisID = UUID()
         photoItem = nil
         selectedImage = nil
         selectedImageData = nil
         selectedImageFileName = nil
+        isAnalyzing = false
         resetAnalysisState()
-    }
-
-    private func presentCameraIfAvailable() {
-        if UIImagePickerController.isSourceTypeAvailable(.camera) {
-            showCamera = true
-        }
     }
 
     private func handlePhotoSelectionChange(_ new: PhotosPickerItem?) {
@@ -175,6 +139,7 @@ struct DetectorView: View {
                         fileName: "photo-library-image.jpg"
                     )
                 }
+                await analyzeCurrentImage()
             }
         }
     }
@@ -188,12 +153,16 @@ struct DetectorView: View {
 
         let fileName = selectedImageFileName ?? "image.jpg"
         let mimeType = fileName.lowercased().hasSuffix(".png") ? "image/png" : "image/jpeg"
+        let requestID = UUID()
 
+        activeAnalysisID = requestID
         isAnalyzing = true
         resetAnalysisState()
 
         defer {
-            isAnalyzing = false
+            if activeAnalysisID == requestID {
+                isAnalyzing = false
+            }
         }
 
         do {
@@ -203,20 +172,19 @@ struct DetectorView: View {
                 mimeType: mimeType
             )
 
+            guard activeAnalysisID == requestID else { return }
             analysisResult = result
         } catch {
+            guard activeAnalysisID == requestID else { return }
             analysisError = error.localizedDescription
         }
     }
 }
 
 private struct ImagePicker: UIViewControllerRepresentable {
-    @Binding var image: UIImage?
-    @Binding var imageData: Data?
-    @Binding var imageFileName: String?
     @Binding var isPresented: Bool
     var sourceType: UIImagePickerController.SourceType
-    var onImageChange: () -> Void
+    var onImagePicked: (UIImage, Data, String) -> Void
 
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
@@ -243,12 +211,11 @@ private struct ImagePicker: UIViewControllerRepresentable {
             _ picker: UIImagePickerController,
             didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]
         ) {
-            if let img = info[.originalImage] as? UIImage {
-                parent.image = img
-                parent.imageData = img.jpegData(compressionQuality: 0.95)
-                parent.imageFileName = "camera-capture.jpg"
-                parent.onImageChange()
+            if let image = info[.originalImage] as? UIImage,
+               let imageData = image.jpegData(compressionQuality: 0.95) {
+                parent.onImagePicked(image, imageData, "camera-capture.jpg")
             }
+
             parent.isPresented = false
         }
 
