@@ -6,12 +6,30 @@
 //
 
 import SwiftUI
+import SwiftData
+
 @main
 struct FakeFinderApp: App {
+
+    private let modelContainer: ModelContainer
+    init() {
+        do {
+            let schema = Schema([
+                ScanRecord.self, 
+                GameSession.self, 
+                UserProfile.self
+            ])
+            
+            let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+            modelContainer = try ModelContainer(for: schema, configurations: [modelConfiguration])
+        } catch {
+            fatalError("Could not create ModelContainer \(error)")
+        }
+    }
     var body: some Scene {
-        WindowGroup {
+        WindowGroup {   
             MainView()
         }
-        .modelContainer(for: [ScanRecord.self, GameSession.self, UserProfile.self])
+        .modelContainer(modelContainer)
     }
 }
