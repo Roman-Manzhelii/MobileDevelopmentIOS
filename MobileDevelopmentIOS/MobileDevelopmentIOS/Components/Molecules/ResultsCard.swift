@@ -11,6 +11,8 @@ struct ResultsCard: View {
     private let imageCornerRadius: CGFloat = 16
     private let clearButtonSize: CGFloat = 30
     private let clearButtonInset: CGFloat = 10
+    private let resultHeight: CGFloat = 92
+    private let resultTopSpacing: CGFloat = 12
 
     private enum DetectionZone {
         case real
@@ -73,11 +75,20 @@ struct ResultsCard: View {
     }
 
     private func selectedImageContent(_ image: UIImage) -> some View {
-        VStack(spacing: 0) {
-            imageArea(image)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        GeometryReader { geometry in
+            let imageContainerHeight = max(geometry.size.height - resultHeight - resultTopSpacing, 0)
+            let imageFrame = fittedImageFrame(
+                containerSize: CGSize(width: geometry.size.width, height: imageContainerHeight),
+                imageSize: image.size
+            )
 
-            resultArea
+            VStack(spacing: 0) {
+                imageArea(image, frame: imageFrame)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: imageContainerHeight)
+
+                resultArea(horizontalInset: imageFrame.minX)
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .animation(.spring(response: 0.38, dampingFraction: 0.88), value: isAnalyzing)
@@ -85,49 +96,41 @@ struct ResultsCard: View {
         .animation(.spring(response: 0.42, dampingFraction: 0.86), value: errorMessage != nil)
     }
 
-    private func imageArea(_ image: UIImage) -> some View {
-        GeometryReader { geometry in
-            let frame = fittedImageFrame(
-                containerSize: geometry.size,
-                imageSize: image.size
-            )
+    private func imageArea(_ image: UIImage, frame: CGRect) -> some View {
+        ZStack(alignment: .topLeading) {
+            Color.clear
 
-            ZStack(alignment: .topLeading) {
-                Color.clear
+            if frame.width > 0, frame.height > 0 {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: frame.width, height: frame.height)
+                    .clipShape(
+                        RoundedRectangle(cornerRadius: imageCornerRadius, style: .continuous)
+                    )
+                    .clipped()
+                    .position(x: frame.midX, y: frame.midY)
 
-                if frame.width > 0, frame.height > 0 {
-                    Image(uiImage: image)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: frame.width, height: frame.height)
-                        .clipShape(
-                            RoundedRectangle(cornerRadius: imageCornerRadius, style: .continuous)
-                        )
-                        .clipped()
-                        .position(x: frame.midX, y: frame.midY)
-
-                    if let onClearTap {
-                        Button(action: onClearTap) {
-                            Image(systemName: "xmark")
-                                .font(.system(size: 11, weight: .bold))
-                                .foregroundStyle(Color.ffTextPrimary)
-                                .frame(width: clearButtonSize, height: clearButtonSize)
-                                .background(Color.ffBackground.opacity(0.94), in: Circle())
-                                .overlay(
-                                    Circle()
-                                        .strokeBorder(Color.ffBorder, lineWidth: 1)
-                                )
-                        }
-                        .buttonStyle(.plain)
-                        .position(
-                            x: frame.maxX - clearButtonInset - (clearButtonSize / 2),
-                            y: frame.minY + clearButtonInset + (clearButtonSize / 2)
-                        )
+                if let onClearTap {
+                    Button(action: onClearTap) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundStyle(Color.ffTextPrimary)
+                            .frame(width: clearButtonSize, height: clearButtonSize)
+                            .background(Color.ffBackground.opacity(0.94), in: Circle())
+                            .overlay(
+                                Circle()
+                                    .strokeBorder(Color.ffBorder, lineWidth: 1)
+                            )
                     }
+                    .buttonStyle(.plain)
+                    .position(
+                        x: frame.maxX - clearButtonInset - (clearButtonSize / 2),
+                        y: frame.minY + clearButtonInset + (clearButtonSize / 2)
+                    )
                 }
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var placeholderContent: some View {
@@ -168,27 +171,30 @@ struct ResultsCard: View {
         )
     }
 
-    private var resultArea: some View {
+    private func resultArea(horizontalInset: CGFloat) -> some View {
         ZStack(alignment: .leading) {
             resultContent
         }
-        .frame(maxWidth: .infinity, minHeight: 92, maxHeight: 92, alignment: .leading)
-        .padding(.top, 12)
+        .frame(maxWidth: .infinity, minHeight: resultHeight, maxHeight: resultHeight, alignment: .leading)
+        .padding(.top, resultTopSpacing)
+        .padding(.horizontal, max(horizontalInset, 0))
     }
 
     @ViewBuilder
     private var resultContent: some View {
         if let analysisResult {
-            VStack(alignment: .leading, spacing: 6) {
-                let zone = detectionZone(for: analysisResult)
-
+            let zone = detectionZone(for: analysisResult)
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
                 Text(zone.headline)
                     .font(.title3.weight(.bold))
                     .foregroundStyle(zone.color)
+                    .lineLimit(1)
 
                 Text(zone.summary)
                     .font(.subheadline)
                     .foregroundStyle(Color.ffTextMuted)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .transition(.move(edge: .bottom).combined(with: .opacity))
