@@ -10,77 +10,287 @@ import SwiftUI
 import UIKit
 
 struct DetectorView: View {
-    @State private var photoItem: PhotosPickerItem?
+    private enum PrimaryAction {
+        case chooseImage
+        case analyze
+        case chooseAnotherImage
+        case retry
+
+        var title: String {
+            switch self {
+            case .chooseImage:
+                return "Choose Image"
+            case .analyze:
+                return "Analyze"
+            case .chooseAnotherImage:
+                return "Choose Another Image"
+            case .retry:
+                return "Try Again"
+            }
+        }
+    }
+
     @State private var selectedImage: UIImage?
+    @State private var selectedImageData: Data?
+    @State private var selectedImageFileName: String?
+    @State private var showSourcePicker = false
+    @State private var showPhotoLibrary = false
     @State private var showCamera = false
+    @State private var isAnalyzing = false
+    @State private var analysisResult: AiclipseCheckResponse?
+    @State private var analysisError: String?
+    @State private var activeAnalysisID = UUID()
+
+    private let apiService = AiclipseAPIService.shared
+
+    private var clearTapAction: (() -> Void)? {
+        guard selectedImage != nil, !isAnalyzing else { return nil }
+        return clearSelection
+    }
+
+    private var primaryAction: PrimaryAction {
+        if selectedImage == nil {
+            return .chooseImage
+        }
+        if analysisResult != nil {
+            return .chooseAnotherImage
+        }
+        if analysisError != nil {
+            return .retry
+        }
+        return .analyze
+    }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("AI Detector")
-                        .font(.title2.weight(.bold))
-                        .foregroundStyle(Color.ffTextPrimary)
-                    Text("Upload & Analyze")
-                        .font(.subheadline)
-                        .foregroundStyle(Color.ffTextMuted)
-                }
-                .padding(.top, 8)
-
-                Rectangle()
-                    .fill(Color.ffBorder)
-                    .frame(height: 1)
-
-                SectionLabel(title: "Image Picker")
-
-                HStack(spacing: 10) {
-                    PhotosPicker(selection: $photoItem, matching: .images) {
-                        PickerCard(emoji: "🖼", title: "Photo Library", footnote: "● iOS PHPicker")
-                    }
-                    .buttonStyle(.plain)
-
-                    Button {
-                        if UIImagePickerController.isSourceTypeAvailable(.camera) {
-                            showCamera = true
-                        }
-                    } label: {
-                        PickerCard(emoji: "📷", title: "Take Photo", footnote: "● Camera capture")
-                    }
-                    .buttonStyle(.plain)
-                }
-
-                Rectangle()
-                    .fill(Color.ffBorder)
-                    .frame(height: 1)
-
-                ResultsCard(selectedImage: selectedImage)
-
-                PrimaryButton(title: "Analyze", isEnabled: selectedImage != nil) {
-                }
-                .padding(.top, 4)
+        detectorContent
+            .confirmationDialog("Choose image source", isPresented: $showSourcePicker, titleVisibility: .visible) {
+                sourcePickerActions
+            } message: {
+                Text("Upload an image from your photo library or take a new photo.")
             }
-            .padding(.horizontal, 18)
-            .padding(.bottom, 20)
+            .sheet(isPresented: $showPhotoLibrary) {
+                photoLibrarySheet
+            }
+            .sheet(isPresented: $showCamera) {
+                cameraSheet
+            }
+    }
+
+    private var detectorContent: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("AI Detector")
+                    .font(.title2.weight(.bold))
+                    .foregroundStyle(Color.ffTextPrimary)
+            }
+            .padding(.top, 8)
+
+            Rectangle()
+                .fill(Color.ffBorder)
+                .frame(height: 1)
+
+            ResultsCard(
+                selectedImage: selectedImage,
+                analysisResult: analysisResult,
+                isAnalyzing: isAnalyzing,
+                errorMessage: analysisError,
+                onPlaceholderTap: {
+                    showSourcePicker = true
+                },
+                onClearTap: clearTapAction
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            PrimaryButton(
+                title: isAnalyzing ? "Analyzing..." : primaryAction.title,
+                isEnabled: !isAnalyzing,
+                isLoading: isAnalyzing
+            ) {
+                handlePrimaryAction()
+            }
         }
-        .onChange(of: photoItem) { _, new in
-            guard let new else { return }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .padding(.horizontal, 18)
+        .padding(.bottom, 20)
+    }
+
+    @ViewBuilder
+    private var sourcePickerActions: some View {
+        Button("Photo Library") {
+            showPhotoLibrary = true
+        }
+
+        if UIImagePickerController.isSourceTypeAvailable(.camera) {
+            Button("Take Photo") {
+                showCamera = true
+            }
+        }
+
+        Button("Cancel", role: .cancel) {}
+    }
+
+    private var photoLibrarySheet: some View {
+        PhotoLibraryPicker(
+            isPresented: $showPhotoLibrary,
+            onImagePicked: { image, imageData, fileName in
+                setSelectedImage(image, uploadData: imageData, fileName: fileName)
+            }
+        )
+    }
+
+    private var cameraSheet: some View {
+        ImagePicker(
+            isPresented: $showCamera,
+            sourceType: .camera,
+            onImagePicked: { image, imageData, fileName in
+                setSelectedImage(image, uploadData: imageData, fileName: fileName)
+            }
+        )
+    }
+
+    private func setSelectedImage(_ image: UIImage, uploadData: Data, fileName: String) {
+        withAnimation(.spring(response: 0.32, dampingFraction: 0.9)) {
+            selectedImage = image
+            selectedImageData = uploadData
+            selectedImageFileName = fileName
+            resetAnalysisState()
+        }
+    }
+
+    private func resetAnalysisState() {
+        analysisResult = nil
+        analysisError = nil
+    }
+
+    private func clearSelection() {
+        activeAnalysisID = UUID()
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.9)) {
+            selectedImage = nil
+            selectedImageData = nil
+            selectedImageFileName = nil
+            isAnalyzing = false
+            resetAnalysisState()
+        }
+    }
+
+    private func handlePrimaryAction() {
+        switch primaryAction {
+        case .chooseImage, .chooseAnotherImage:
+            showSourcePicker = true
+        case .analyze, .retry:
             Task {
-                if let data = try? await new.loadTransferable(type: Data.self),
-                   let ui = UIImage(data: data) {
-                    await MainActor.run { selectedImage = ui }
+                await analyzeCurrentImage()
+            }
+        }
+    }
+
+    @MainActor
+    private func analyzeCurrentImage() async {
+        guard let selectedImageData else {
+            analysisError = "No image is available for analysis."
+            return
+        }
+
+        let fileName = selectedImageFileName ?? "image.jpg"
+        let mimeType = fileName.lowercased().hasSuffix(".png") ? "image/png" : "image/jpeg"
+        let requestID = UUID()
+
+        activeAnalysisID = requestID
+        withAnimation(.spring(response: 0.28, dampingFraction: 0.92)) {
+            isAnalyzing = true
+            resetAnalysisState()
+        }
+
+        defer {
+            if activeAnalysisID == requestID {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.9)) {
+                    isAnalyzing = false
                 }
             }
         }
-        .sheet(isPresented: $showCamera) {
-            ImagePicker(image: $selectedImage, isPresented: $showCamera, sourceType: .camera)
+
+        do {
+            let result = try await apiService.analyzeImage(
+                data: selectedImageData,
+                filename: fileName,
+                mimeType: mimeType
+            )
+
+            guard activeAnalysisID == requestID else { return }
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.86)) {
+                analysisResult = result
+            }
+        } catch {
+            guard activeAnalysisID == requestID else { return }
+            withAnimation(.spring(response: 0.32, dampingFraction: 0.9)) {
+                analysisError = error.localizedDescription
+            }
+        }
+    }
+}
+
+private struct PhotoLibraryPicker: UIViewControllerRepresentable {
+    @Binding var isPresented: Bool
+    var onImagePicked: (UIImage, Data, String) -> Void
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+
+    func makeUIViewController(context: Context) -> PHPickerViewController {
+        var configuration = PHPickerConfiguration()
+        configuration.filter = .images
+        configuration.selectionLimit = 1
+        configuration.selection = .default
+
+        let picker = PHPickerViewController(configuration: configuration)
+        picker.delegate = context.coordinator
+        return picker
+    }
+
+    func updateUIViewController(_ uiViewController: PHPickerViewController, context: Context) {}
+
+    final class Coordinator: NSObject, PHPickerViewControllerDelegate {
+        let parent: PhotoLibraryPicker
+
+        init(_ parent: PhotoLibraryPicker) {
+            self.parent = parent
+        }
+
+        func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
+            guard let result = results.first else {
+                parent.isPresented = false
+                return
+            }
+
+            let provider = result.itemProvider
+            guard provider.canLoadObject(ofClass: UIImage.self) else {
+                parent.isPresented = false
+                return
+            }
+
+            provider.loadObject(ofClass: UIImage.self) { object, _ in
+                DispatchQueue.main.async {
+                    defer {
+                        self.parent.isPresented = false
+                    }
+
+                    guard let image = object as? UIImage,
+                          let imageData = image.jpegData(compressionQuality: 0.95) else {
+                        return
+                    }
+
+                    self.parent.onImagePicked(image, imageData, "photo-library-image.jpg")
+                }
+            }
         }
     }
 }
 
 private struct ImagePicker: UIViewControllerRepresentable {
-    @Binding var image: UIImage?
     @Binding var isPresented: Bool
     var sourceType: UIImagePickerController.SourceType
+    var onImagePicked: (UIImage, Data, String) -> Void
 
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
@@ -107,9 +317,12 @@ private struct ImagePicker: UIViewControllerRepresentable {
             _ picker: UIImagePickerController,
             didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]
         ) {
-            if let img = info[.originalImage] as? UIImage {
-                parent.image = img
+            if let image = info[.originalImage] as? UIImage,
+               let imageData = image.jpegData(compressionQuality: 0.95) {
+                let fileName = parent.sourceType == .camera ? "camera-capture.jpg" : "photo-library-image.jpg"
+                parent.onImagePicked(image, imageData, fileName)
             }
+
             parent.isPresented = false
         }
 

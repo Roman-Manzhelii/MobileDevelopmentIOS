@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct HomeView: View {
+    @Binding var selectedTab: FFTab
+
     private let stats: [StatItem] = [
         StatItem(value: "12", label: "Scans this week"),
         StatItem(value: "74%", label: "Game accuracy"),
@@ -33,7 +35,9 @@ struct HomeView: View {
 
                 SectionLabel(title: "Quick Actions")
                 HStack(spacing: 10) {
-                    QuickActionCard(systemImage: "camera.viewfinder", title: "Detector") {}
+                    QuickActionCard(systemImage: "camera.viewfinder", title: "Detector") {
+                        selectedTab = .detector
+                    }
                     QuickActionCard(systemImage: "rectangle.stack.fill.badge.play", title: "Swiper") {}
                 }
 
@@ -54,6 +58,6 @@ struct HomeView: View {
 }
 
 #Preview {
-    HomeView()
+    HomeView(selectedTab: .constant(.home))
         .background(Color.ffBackground)
 }
