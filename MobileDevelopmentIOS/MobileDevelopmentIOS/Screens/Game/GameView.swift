@@ -4,6 +4,9 @@
 //
 //  Created by Student on 23/03/2026.
 //
+import SwiftUI
+import SwiftData
+import Shuffle
 
 struct GameView: View {
     @Environment(\.modelContext) private var context
@@ -18,7 +21,7 @@ struct GameView: View {
     }
     
     // Get the unseen cards. Don't show the cards that the user has already seen.
-    private func getUnseenCards() -> [GameCard] {
+    private func getUnseenCards() -> [GameCardData] {
         guard let userProfile = profiles.first else { return gameManager.cards }
         return gameManager.cards.filter { !userProfile.seenGameCardIDs.contains($0.id) }
     }
