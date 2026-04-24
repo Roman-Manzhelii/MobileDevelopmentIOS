@@ -5,6 +5,7 @@
 //  Created by Student on 23/03/2026.
 //
 
+import PhotosUI
 import SwiftUI
 import UIKit
 
@@ -129,9 +130,8 @@ struct DetectorView: View {
     }
 
     private var photoLibrarySheet: some View {
-        ImagePicker(
+        PhotoLibraryPicker(
             isPresented: $showPhotoLibrary,
-            sourceType: .photoLibrary,
             onImagePicked: { image, imageData, fileName in
                 setSelectedImage(image, uploadData: imageData, fileName: fileName)
             }
@@ -224,6 +224,63 @@ struct DetectorView: View {
             guard activeAnalysisID == requestID else { return }
             withAnimation(.spring(response: 0.32, dampingFraction: 0.9)) {
                 analysisError = error.localizedDescription
+            }
+        }
+    }
+}
+
+private struct PhotoLibraryPicker: UIViewControllerRepresentable {
+    @Binding var isPresented: Bool
+    var onImagePicked: (UIImage, Data, String) -> Void
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+
+    func makeUIViewController(context: Context) -> PHPickerViewController {
+        var configuration = PHPickerConfiguration()
+        configuration.filter = .images
+        configuration.selectionLimit = 0
+
+        let picker = PHPickerViewController(configuration: configuration)
+        picker.delegate = context.coordinator
+        return picker
+    }
+
+    func updateUIViewController(_ uiViewController: PHPickerViewController, context: Context) {}
+
+    final class Coordinator: NSObject, PHPickerViewControllerDelegate {
+        let parent: PhotoLibraryPicker
+
+        init(_ parent: PhotoLibraryPicker) {
+            self.parent = parent
+        }
+
+        func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
+            guard let result = results.first else {
+                parent.isPresented = false
+                return
+            }
+
+            let provider = result.itemProvider
+            guard provider.canLoadObject(ofClass: UIImage.self) else {
+                parent.isPresented = false
+                return
+            }
+
+            provider.loadObject(ofClass: UIImage.self) { object, _ in
+                DispatchQueue.main.async {
+                    defer {
+                        self.parent.isPresented = false
+                    }
+
+                    guard let image = object as? UIImage,
+                          let imageData = image.jpegData(compressionQuality: 0.95) else {
+                        return
+                    }
+
+                    self.parent.onImagePicked(image, imageData, "photo-library-image.jpg")
+                }
             }
         }
     }
