@@ -10,6 +10,26 @@ import SwiftUI
 import UIKit
 
 struct DetectorView: View {
+    private enum PrimaryAction {
+        case chooseImage
+        case analyze
+        case chooseAnotherImage
+        case retry
+
+        var title: String {
+            switch self {
+            case .chooseImage:
+                return "Choose Image"
+            case .analyze:
+                return "Analyze"
+            case .chooseAnotherImage:
+                return "Choose Another Image"
+            case .retry:
+                return "Try Again"
+            }
+        }
+    }
+
     @State private var photoItem: PhotosPickerItem?
     @State private var selectedImage: UIImage?
     @State private var selectedImageData: Data?
@@ -27,6 +47,19 @@ struct DetectorView: View {
     private var clearTapAction: (() -> Void)? {
         guard selectedImage != nil, !isAnalyzing else { return nil }
         return clearSelection
+    }
+
+    private var primaryAction: PrimaryAction {
+        if selectedImage == nil {
+            return .chooseImage
+        }
+        if analysisResult != nil {
+            return .chooseAnotherImage
+        }
+        if analysisError != nil {
+            return .retry
+        }
+        return .analyze
     }
 
     var body: some View {
@@ -69,6 +102,13 @@ struct DetectorView: View {
                 onClearTap: clearTapAction
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            PrimaryButton(
+                title: isAnalyzing ? "Analyzing..." : primaryAction.title,
+                isEnabled: !isAnalyzing
+            ) {
+                handlePrimaryAction()
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .padding(.horizontal, 18)
@@ -96,9 +136,6 @@ struct DetectorView: View {
             sourceType: .camera,
             onImagePicked: { image, imageData, fileName in
                 setSelectedImage(image, uploadData: imageData, fileName: fileName)
-                Task {
-                    await analyzeCurrentImage()
-                }
             }
         )
     }
@@ -139,6 +176,16 @@ struct DetectorView: View {
                         fileName: "photo-library-image.jpg"
                     )
                 }
+            }
+        }
+    }
+
+    private func handlePrimaryAction() {
+        switch primaryAction {
+        case .chooseImage, .chooseAnotherImage:
+            showSourcePicker = true
+        case .analyze, .retry:
+            Task {
                 await analyzeCurrentImage()
             }
         }

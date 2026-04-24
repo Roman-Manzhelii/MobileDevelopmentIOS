@@ -13,7 +13,7 @@ struct ResultsCard: View {
         case suspicious
         case fake
 
-        var title: String {
+        var headline: String {
             switch self {
             case .real:
                 return "Real"
@@ -32,6 +32,17 @@ struct ResultsCard: View {
                 return .ffGold
             case .fake:
                 return .ffRed
+            }
+        }
+
+        var summary: String {
+            switch self {
+            case .real:
+                return "Low fake likelihood"
+            case .suspicious:
+                return "Result is uncertain"
+            case .fake:
+                return "High fake likelihood"
             }
         }
     }
@@ -106,7 +117,7 @@ struct ResultsCard: View {
                     .font(.title3.weight(.semibold))
                     .foregroundStyle(Color.ffTextPrimary)
 
-                Text("Tap to choose Photo Library or Camera")
+                Text("Tap to choose an image, then press Analyze")
                     .font(.subheadline)
                     .foregroundStyle(Color.ffTextMuted)
                     .multilineTextAlignment(.center)
@@ -137,11 +148,13 @@ struct ResultsCard: View {
             }
         } else if let analysisResult {
             VStack(alignment: .leading, spacing: 6) {
-                Text(detectionZone(for: analysisResult).title)
-                    .font(.title3.weight(.bold))
-                    .foregroundStyle(detectionZone(for: analysisResult).color)
+                let zone = detectionZone(for: analysisResult)
 
-                Text(simpleSummary(for: analysisResult))
+                Text(zone.headline)
+                    .font(.title3.weight(.bold))
+                    .foregroundStyle(zone.color)
+
+                Text(zone.summary)
                     .font(.subheadline)
                     .foregroundStyle(Color.ffTextMuted)
             }
@@ -150,14 +163,6 @@ struct ResultsCard: View {
                 .font(.caption)
                 .foregroundStyle(Color.ffRed)
         }
-    }
-
-    private func simpleSummary(for result: AiclipseCheckResponse) -> String {
-        "\(analysisPercent(for: result))% probability of fakeness"
-    }
-
-    private func analysisPercent(for result: AiclipseCheckResponse) -> Int {
-        Int((result.aiProbability * 100).rounded())
     }
 
     private func detectionZone(for result: AiclipseCheckResponse) -> DetectionZone {
