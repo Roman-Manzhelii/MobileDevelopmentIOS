@@ -172,10 +172,10 @@ struct ResultsCard: View {
     }
 
     private func resultArea(horizontalInset: CGFloat) -> some View {
-        ZStack(alignment: .leading) {
+        ZStack {
             resultContent
         }
-        .frame(maxWidth: .infinity, minHeight: resultHeight, maxHeight: resultHeight, alignment: .leading)
+        .frame(maxWidth: .infinity, minHeight: resultHeight, maxHeight: resultHeight)
         .padding(.top, resultTopSpacing)
         .padding(.horizontal, max(horizontalInset, 0))
     }
@@ -184,7 +184,7 @@ struct ResultsCard: View {
     private var resultContent: some View {
         if let analysisResult {
             let zone = detectionZone(for: analysisResult)
-            HStack(alignment: .firstTextBaseline, spacing: 10) {
+            VStack(spacing: 6) {
                 Text(zone.headline)
                     .font(.title3.weight(.bold))
                     .foregroundStyle(zone.color)
@@ -196,13 +196,14 @@ struct ResultsCard: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.85)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: .center)
             .transition(.move(edge: .bottom).combined(with: .opacity))
         } else if let errorMessage {
             Text(errorMessage)
                 .font(.caption)
                 .foregroundStyle(Color.ffRed)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity, alignment: .center)
             .transition(.move(edge: .bottom).combined(with: .opacity))
         }
     }
