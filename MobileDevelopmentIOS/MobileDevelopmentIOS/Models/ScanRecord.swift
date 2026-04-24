@@ -2,14 +2,23 @@
 //  ScanRecord.swift
 //  MobileDevelopmentIOS
 //
-//  Canonical detector history model.
+//  
 //
 
 import Foundation
+import SwiftData
 
-struct ScanRecord: Identifiable, Codable, Hashable {
-    let id: UUID
-    let timestamp: Date
-    let imagePath: String
-    let aiProbability: Double
+@Model
+class ScanRecord {
+    var id: UUID
+    var timestamp: Date
+    var imageFileName: String // Renamed slightly for clarity
+    var aiProbability: Double
+    
+    init(id: UUID = UUID(), timestamp: Date = .now, imageFileName: String, aiProbability: Double) {
+        self.id = id
+        self.timestamp = timestamp
+        self.imageFileName = imageFileName
+        self.aiProbability = aiProbability
+    }
 }

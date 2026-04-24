@@ -12,5 +12,6 @@ struct FakeFinderApp: App {
         WindowGroup {
             MainView()
         }
+        .modelContainer(for: [ScanRecord.self, GameSession.self, UserProfile.self])
     }
 }

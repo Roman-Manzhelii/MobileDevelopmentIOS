@@ -1,15 +1,22 @@
 //
 //  GameSession.swift
 //  MobileDevelopmentIOS
-//
-//  Canonical game session metrics model.
-//
+
 
 import Foundation
+import SwiftData
 
-struct GameSession: Identifiable, Codable, Hashable {
-    let id: UUID
-    let totalSwipes: Int
-    let correctGuesses: Int
-    let datePlayed: Date
+@Model
+class GameSession {
+    var id: UUID
+    var totalSwipes: Int
+    var correctGuesses: Int
+    var datePlayed: Date
+    
+    init(id: UUID = UUID(), totalSwipes: Int = 0, correctGuesses: Int = 0, datePlayed: Date = .now) {
+        self.id = id
+        self.totalSwipes = totalSwipes
+        self.correctGuesses = correctGuesses
+        self.datePlayed = datePlayed
+    }
 }

@@ -1,0 +1,14 @@
+[
+    {
+      "id": "1",
+      "imageName": "Test",
+      "isReal": false,
+      "explanation": "Test"
+    },
+    {
+      "id": "2",
+      "imageName": "Test",
+      "isReal": true,
+      "explanation": "Test"
+    }
+  ]
