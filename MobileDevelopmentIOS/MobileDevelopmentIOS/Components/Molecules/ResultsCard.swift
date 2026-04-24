@@ -57,12 +57,6 @@ struct ResultsCard: View {
     var body: some View {
         cardContent
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .padding(14)
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .strokeBorder(Color.ffBorder, lineWidth: 1)
-                    .background(RoundedRectangle(cornerRadius: 16).fill(Color.ffCard))
-            )
     }
 
     @ViewBuilder
@@ -75,37 +69,51 @@ struct ResultsCard: View {
     }
 
     private func selectedImageContent(_ image: UIImage) -> some View {
-        ZStack(alignment: .bottom) {
-            Image(uiImage: image)
-                .resizable()
-                .scaledToFill()
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .clipped()
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+        VStack(spacing: 0) {
+            ZStack(alignment: .topTrailing) {
+                imageArea(image)
 
-            resultOverlay
+                if let onClearTap {
+                    Button(action: onClearTap) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundStyle(Color.ffTextPrimary)
+                            .frame(width: 30, height: 30)
+                            .background(Color.ffBackground.opacity(0.94), in: Circle())
+                            .overlay(
+                                Circle()
+                                    .strokeBorder(Color.ffBorder, lineWidth: 1)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.top, 4)
+                    .padding(.trailing, 4)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            Rectangle()
+                .fill(Color.ffBorder.opacity(0.7))
+                .frame(height: 1)
+
+            resultArea
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .overlay(alignment: .topTrailing) {
-            if let onClearTap {
-                Button(action: onClearTap) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundStyle(Color.ffTextPrimary)
-                        .frame(width: 30, height: 30)
-                        .background(Color.ffBackground.opacity(0.94), in: Circle())
-                        .overlay(
-                            Circle()
-                                .strokeBorder(Color.ffBorder, lineWidth: 1)
-                        )
-                }
-                .buttonStyle(.plain)
-                .padding(4)
-            }
-        }
         .animation(.spring(response: 0.38, dampingFraction: 0.88), value: isAnalyzing)
         .animation(.spring(response: 0.42, dampingFraction: 0.86), value: analysisResult != nil)
         .animation(.spring(response: 0.42, dampingFraction: 0.86), value: errorMessage != nil)
+    }
+
+    private func imageArea(_ image: UIImage) -> some View {
+        ZStack {
+            Color.clear
+
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFit()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var placeholderContent: some View {
@@ -138,47 +146,45 @@ struct ResultsCard: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .buttonStyle(.plain)
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .strokeBorder(Color.ffBorder, lineWidth: 1)
+                .background(RoundedRectangle(cornerRadius: 16).fill(Color.ffCard))
+        )
+    }
+
+    private var resultArea: some View {
+        ZStack(alignment: .leading) {
+            resultContent
+        }
+        .frame(maxWidth: .infinity, minHeight: 92, maxHeight: 92, alignment: .leading)
+        .padding(.top, 12)
     }
 
     @ViewBuilder
-    private var resultOverlay: some View {
+    private var resultContent: some View {
         if let analysisResult {
-            overlayPanel {
-                VStack(alignment: .leading, spacing: 6) {
-                    let zone = detectionZone(for: analysisResult)
+            VStack(alignment: .leading, spacing: 6) {
+                let zone = detectionZone(for: analysisResult)
 
-                    Text(zone.headline)
-                        .font(.title3.weight(.bold))
-                        .foregroundStyle(zone.color)
+                Text(zone.headline)
+                    .font(.title3.weight(.bold))
+                    .foregroundStyle(zone.color)
 
-                    Text(zone.summary)
-                        .font(.subheadline)
-                        .foregroundStyle(Color.ffTextMuted)
-                }
+                Text(zone.summary)
+                    .font(.subheadline)
+                    .foregroundStyle(Color.ffTextMuted)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             .transition(.move(edge: .bottom).combined(with: .opacity))
         } else if let errorMessage {
-            overlayPanel {
-                Text(errorMessage)
-                    .font(.caption)
-                    .foregroundStyle(Color.ffRed)
-            }
+            Text(errorMessage)
+                .font(.caption)
+                .foregroundStyle(Color.ffRed)
+                .frame(maxWidth: .infinity, alignment: .leading)
             .transition(.move(edge: .bottom).combined(with: .opacity))
         }
-    }
-
-    private func overlayPanel<Content: View>(@ViewBuilder content: () -> Content) -> some View {
-        content()
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 12)
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14))
-            .overlay(
-                RoundedRectangle(cornerRadius: 14)
-                    .strokeBorder(Color.ffBorder.opacity(0.7), lineWidth: 1)
-            )
-            .padding(.horizontal, 12)
-            .padding(.bottom, 12)
     }
 
     private func detectionZone(for result: AiclipseCheckResponse) -> DetectionZone {
