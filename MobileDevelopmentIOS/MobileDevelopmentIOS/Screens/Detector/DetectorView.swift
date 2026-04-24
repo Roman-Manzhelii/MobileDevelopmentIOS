@@ -9,20 +9,6 @@ import PhotosUI
 import SwiftUI
 import UIKit
 
-enum DetectorImageConfiguration {
-    static let bundledResourceName = "testImage"
-    static let bundledResourceExtension = "png"
-    static let bundledFileName = "\(bundledResourceName).\(bundledResourceExtension)"
-    static let photoLibraryFileName = "photo-library-image.jpg"
-    static let cameraCaptureFileName = "camera-capture.jpg"
-
-    static func uploadDetails(for fileName: String?) -> (fileName: String, mimeType: String) {
-        let resolvedFileName = fileName ?? "image.jpg"
-        let mimeType = resolvedFileName.lowercased().hasSuffix(".png") ? "image/png" : "image/jpeg"
-        return (resolvedFileName, mimeType)
-    }
-}
-
 struct DetectorView: View {
     @State private var photoItem: PhotosPickerItem?
     @State private var selectedImage: UIImage?
@@ -36,72 +22,65 @@ struct DetectorView: View {
     private let apiService = AiclipseAPIService.shared
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("AI Detector")
-                        .font(.title2.weight(.bold))
-                        .foregroundStyle(Color.ffTextPrimary)
-                    Text("Upload & Analyze")
-                        .font(.subheadline)
-                        .foregroundStyle(Color.ffTextMuted)
-                }
-                .padding(.top, 8)
-
-                Rectangle()
-                    .fill(Color.ffBorder)
-                    .frame(height: 1)
-
-                SectionLabel(title: "Image Picker")
-
-                HStack(spacing: 10) {
-                    PhotosPicker(selection: $photoItem, matching: .images) {
-                        PickerCard(emoji: "IMG", title: "Photo Library", footnote: "- iOS PHPicker")
-                    }
-                    .buttonStyle(.plain)
-
-                    Button {
-                        if UIImagePickerController.isSourceTypeAvailable(.camera) {
-                            showCamera = true
-                        }
-                    } label: {
-                        PickerCard(emoji: "CAM", title: "Take Photo", footnote: "- Camera capture")
-                    }
-                    .buttonStyle(.plain)
-                }
-
-                Rectangle()
-                    .fill(Color.ffBorder)
-                    .frame(height: 1)
-
-                ResultsCard(
-                    selectedImage: selectedImage,
-                    sourceFileName: selectedImageFileName,
-                    analysisResult: analysisResult,
-                    isAnalyzing: isAnalyzing,
-                    errorMessage: analysisError
-                )
-
-                PrimaryButton(
-                    title: isAnalyzing ? "Analyzing..." : "Analyze",
-                    isEnabled: selectedImageData != nil && !isAnalyzing
-                ) {
-                    Task {
-                        await analyzeCurrentImage()
-                    }
-                }
-                .padding(.top, 4)
-
-                Text("Default source is bundled `testImage.png`. If you pick another photo, that image will be analyzed instead.")
-                    .font(.caption2)
+        VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("AI Detector")
+                    .font(.title2.weight(.bold))
+                    .foregroundStyle(Color.ffTextPrimary)
+                Text("Upload & Analyze")
+                    .font(.subheadline)
                     .foregroundStyle(Color.ffTextMuted)
             }
-            .padding(.horizontal, 18)
-            .padding(.bottom, 20)
+            .padding(.top, 8)
+
+            Rectangle()
+                .fill(Color.ffBorder)
+                .frame(height: 1)
+
+            SectionLabel(title: "Image Picker")
+
+            HStack(spacing: 10) {
+                PhotosPicker(selection: $photoItem, matching: .images) {
+                    PickerCard(emoji: "🖼", title: "Photo Library", footnote: "● iOS PHPicker")
+                }
+                .buttonStyle(.plain)
+
+                Button {
+                    if UIImagePickerController.isSourceTypeAvailable(.camera) {
+                        showCamera = true
+                    }
+                } label: {
+                    PickerCard(emoji: "📷", title: "Take Photo", footnote: "● Camera capture")
+                }
+                .buttonStyle(.plain)
+            }
+
+            Rectangle()
+                .fill(Color.ffBorder)
+                .frame(height: 1)
+
+            ResultsCard(
+                selectedImage: selectedImage,
+                analysisResult: analysisResult,
+                isAnalyzing: isAnalyzing,
+                errorMessage: analysisError
+            )
+
+            PrimaryButton(
+                title: isAnalyzing ? "Analyzing..." : "Analyze",
+                isEnabled: selectedImageData != nil && !isAnalyzing
+            ) {
+                Task {
+                    await analyzeCurrentImage()
+                }
+            }
+            .padding(.top, 4)
+
+            Spacer(minLength: 0)
         }
-        .task {
-            loadBundledTestImageIfNeeded()
-        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .padding(.horizontal, 18)
+        .padding(.bottom, 20)
         .onChange(of: photoItem) { _, new in
             guard let new else { return }
             Task {
@@ -112,7 +91,7 @@ struct DetectorView: View {
                         setSelectedImage(
                             ui,
                             uploadData: uploadData,
-                            fileName: DetectorImageConfiguration.photoLibraryFileName
+                            fileName: "photo-library-image.jpg"
                         )
                     }
                 }
@@ -142,24 +121,6 @@ struct DetectorView: View {
         analysisError = nil
     }
 
-    private func loadBundledTestImageIfNeeded() {
-        guard selectedImage == nil else { return }
-
-        guard let url = Bundle.main.url(
-            forResource: DetectorImageConfiguration.bundledResourceName,
-            withExtension: DetectorImageConfiguration.bundledResourceExtension
-        ),
-              let data = try? Data(contentsOf: url),
-              let image = UIImage(data: data) else {
-            analysisError = "Could not load bundled \(DetectorImageConfiguration.bundledFileName). Make sure the file is included in the app target."
-            return
-        }
-
-        selectedImage = image
-        selectedImageData = data
-        selectedImageFileName = DetectorImageConfiguration.bundledFileName
-    }
-
     @MainActor
     private func analyzeCurrentImage() async {
         guard let selectedImageData else {
@@ -167,7 +128,8 @@ struct DetectorView: View {
             return
         }
 
-        let uploadDetails = DetectorImageConfiguration.uploadDetails(for: selectedImageFileName)
+        let fileName = selectedImageFileName ?? "image.jpg"
+        let mimeType = fileName.lowercased().hasSuffix(".png") ? "image/png" : "image/jpeg"
 
         isAnalyzing = true
         resetAnalysisState()
@@ -179,8 +141,8 @@ struct DetectorView: View {
         do {
             let result = try await apiService.analyzeImage(
                 data: selectedImageData,
-                filename: uploadDetails.fileName,
-                mimeType: uploadDetails.mimeType
+                filename: fileName,
+                mimeType: mimeType
             )
 
             analysisResult = result
@@ -226,7 +188,7 @@ private struct ImagePicker: UIViewControllerRepresentable {
             if let img = info[.originalImage] as? UIImage {
                 parent.image = img
                 parent.imageData = img.jpegData(compressionQuality: 0.95)
-                parent.imageFileName = DetectorImageConfiguration.cameraCaptureFileName
+                parent.imageFileName = "camera-capture.jpg"
                 parent.onImageChange()
             }
             parent.isPresented = false
