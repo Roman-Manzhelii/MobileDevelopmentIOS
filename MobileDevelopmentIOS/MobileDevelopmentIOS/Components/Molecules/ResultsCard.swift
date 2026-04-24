@@ -8,6 +8,10 @@
 import SwiftUI
 
 struct ResultsCard: View {
+    private let imageCornerRadius: CGFloat = 16
+    private let clearButtonSize: CGFloat = 30
+    private let clearButtonInset: CGFloat = 10
+
     private enum DetectionZone {
         case real
         case suspicious
@@ -70,31 +74,8 @@ struct ResultsCard: View {
 
     private func selectedImageContent(_ image: UIImage) -> some View {
         VStack(spacing: 0) {
-            ZStack(alignment: .topTrailing) {
-                imageArea(image)
-
-                if let onClearTap {
-                    Button(action: onClearTap) {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundStyle(Color.ffTextPrimary)
-                            .frame(width: 30, height: 30)
-                            .background(Color.ffBackground.opacity(0.94), in: Circle())
-                            .overlay(
-                                Circle()
-                                    .strokeBorder(Color.ffBorder, lineWidth: 1)
-                            )
-                    }
-                    .buttonStyle(.plain)
-                    .padding(.top, 4)
-                    .padding(.trailing, 4)
-                }
-            }
+            imageArea(image)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-            Rectangle()
-                .fill(Color.ffBorder.opacity(0.7))
-                .frame(height: 1)
 
             resultArea
         }
@@ -105,13 +86,46 @@ struct ResultsCard: View {
     }
 
     private func imageArea(_ image: UIImage) -> some View {
-        ZStack {
-            Color.clear
+        GeometryReader { geometry in
+            let frame = fittedImageFrame(
+                containerSize: geometry.size,
+                imageSize: image.size
+            )
 
-            Image(uiImage: image)
-                .resizable()
-                .scaledToFit()
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            ZStack(alignment: .topLeading) {
+                Color.clear
+
+                if frame.width > 0, frame.height > 0 {
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: frame.width, height: frame.height)
+                        .clipShape(
+                            RoundedRectangle(cornerRadius: imageCornerRadius, style: .continuous)
+                        )
+                        .clipped()
+                        .position(x: frame.midX, y: frame.midY)
+
+                    if let onClearTap {
+                        Button(action: onClearTap) {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundStyle(Color.ffTextPrimary)
+                                .frame(width: clearButtonSize, height: clearButtonSize)
+                                .background(Color.ffBackground.opacity(0.94), in: Circle())
+                                .overlay(
+                                    Circle()
+                                        .strokeBorder(Color.ffBorder, lineWidth: 1)
+                                )
+                        }
+                        .buttonStyle(.plain)
+                        .position(
+                            x: frame.maxX - clearButtonInset - (clearButtonSize / 2),
+                            y: frame.minY + clearButtonInset + (clearButtonSize / 2)
+                        )
+                    }
+                }
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -196,6 +210,27 @@ struct ResultsCard: View {
         default:
             return .fake
         }
+    }
+
+    private func fittedImageFrame(containerSize: CGSize, imageSize: CGSize) -> CGRect {
+        guard containerSize.width > 0,
+              containerSize.height > 0,
+              imageSize.width > 0,
+              imageSize.height > 0 else {
+            return .zero
+        }
+
+        let scale = min(
+            containerSize.width / imageSize.width,
+            containerSize.height / imageSize.height
+        )
+
+        let width = imageSize.width * scale
+        let height = imageSize.height * scale
+        let originX = (containerSize.width - width) / 2
+        let originY = (containerSize.height - height) / 2
+
+        return CGRect(x: originX, y: originY, width: width, height: height)
     }
 }
 
