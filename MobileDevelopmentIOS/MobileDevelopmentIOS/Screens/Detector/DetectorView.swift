@@ -22,8 +22,28 @@ struct DetectorView: View {
     @State private var analysisError: String?
 
     private let apiService = AiclipseAPIService.shared
+    private var clearTapAction: (() -> Void)? {
+        guard selectedImage != nil, !isAnalyzing else { return nil }
+        return { clearSelection() }
+    }
 
     var body: some View {
+        detectorContent
+            .photosPicker(isPresented: $showPhotoLibrary, selection: $photoItem, matching: .images)
+            .confirmationDialog("Choose image source", isPresented: $showSourcePicker, titleVisibility: .visible) {
+                sourcePickerActions
+            } message: {
+                Text("Upload an image from your photo library or take a new photo.")
+            }
+            .onChange(of: photoItem) { _, new in
+                handlePhotoSelectionChange(new)
+            }
+            .sheet(isPresented: $showCamera) {
+                cameraSheet
+            }
+    }
+
+    private var detectorContent: some View {
         VStack(alignment: .leading, spacing: 14) {
             VStack(alignment: .leading, spacing: 4) {
                 Text("AI Detector")
@@ -69,7 +89,7 @@ struct DetectorView: View {
                 onPlaceholderTap: {
                     showSourcePicker = true
                 },
-                onClearTap: selectedImage != nil && !isAnalyzing ? clearSelection : nil
+                onClearTap: clearTapAction
             )
 
             PrimaryButton(
@@ -87,48 +107,32 @@ struct DetectorView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .padding(.horizontal, 18)
         .padding(.bottom, 20)
-        .photosPicker(isPresented: $showPhotoLibrary, selection: $photoItem, matching: .images)
-        .confirmationDialog("Choose image source", isPresented: $showSourcePicker, titleVisibility: .visible) {
-            Button("Photo Library") {
-                showPhotoLibrary = true
-            }
+    }
 
-            if UIImagePickerController.isSourceTypeAvailable(.camera) {
-                Button("Take Photo") {
-                    showCamera = true
-                }
-            }
+    @ViewBuilder
+    private var sourcePickerActions: some View {
+        Button("Photo Library") {
+            showPhotoLibrary = true
+        }
 
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("Upload an image from your photo library or take a new photo.")
-        }
-        .onChange(of: photoItem) { _, new in
-            guard let new else { return }
-            Task {
-                if let data = try? await new.loadTransferable(type: Data.self),
-                   let ui = UIImage(data: data) {
-                    let uploadData = ui.jpegData(compressionQuality: 0.95) ?? data
-                    await MainActor.run {
-                        setSelectedImage(
-                            ui,
-                            uploadData: uploadData,
-                            fileName: "photo-library-image.jpg"
-                        )
-                    }
-                }
+        if UIImagePickerController.isSourceTypeAvailable(.camera) {
+            Button("Take Photo") {
+                showCamera = true
             }
         }
-        .sheet(isPresented: $showCamera) {
-            ImagePicker(
-                image: $selectedImage,
-                imageData: $selectedImageData,
-                imageFileName: $selectedImageFileName,
-                isPresented: $showCamera,
-                sourceType: .camera,
-                onImageChange: resetAnalysisState
-            )
-        }
+
+        Button("Cancel", role: .cancel) {}
+    }
+
+    private var cameraSheet: some View {
+        ImagePicker(
+            image: $selectedImage,
+            imageData: $selectedImageData,
+            imageFileName: $selectedImageFileName,
+            isPresented: $showCamera,
+            sourceType: .camera,
+            onImageChange: resetAnalysisState
+        )
     }
 
     private func setSelectedImage(_ image: UIImage, uploadData: Data, fileName: String) {
@@ -154,6 +158,24 @@ struct DetectorView: View {
     private func presentCameraIfAvailable() {
         if UIImagePickerController.isSourceTypeAvailable(.camera) {
             showCamera = true
+        }
+    }
+
+    private func handlePhotoSelectionChange(_ new: PhotosPickerItem?) {
+        guard let new else { return }
+
+        Task {
+            if let data = try? await new.loadTransferable(type: Data.self),
+               let ui = UIImage(data: data) {
+                let uploadData = ui.jpegData(compressionQuality: 0.95) ?? data
+                await MainActor.run {
+                    setSelectedImage(
+                        ui,
+                        uploadData: uploadData,
+                        fileName: "photo-library-image.jpg"
+                    )
+                }
+            }
         }
     }
 
