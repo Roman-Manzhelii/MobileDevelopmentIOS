@@ -46,7 +46,7 @@ struct HistoryView: View {
                     .fill(Color.ffBorder)
                     .frame(height: 1)
 
-                Text("● Fetched from SwiftData ScanHistory — chronological list")
+                Text("● Fetched from SwiftData ScanRecord — chronological list")
                     .font(.caption2)
                     .foregroundStyle(Color.ffTextMuted)
 

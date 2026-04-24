@@ -46,7 +46,7 @@ struct ProfileView: View {
                 SectionLabel(title: "Metrics")
                 MetricsGrid(items: metrics)
 
-                Text("● All metrics from SwiftData GameStat + ScanHistory")
+                Text("● All metrics from SwiftData GameSession + ScanRecord")
                     .font(.caption2)
                     .foregroundStyle(Color.ffTextMuted)
             }
