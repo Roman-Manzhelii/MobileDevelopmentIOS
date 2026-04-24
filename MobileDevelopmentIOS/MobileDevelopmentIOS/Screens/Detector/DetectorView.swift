@@ -105,7 +105,8 @@ struct DetectorView: View {
 
             PrimaryButton(
                 title: isAnalyzing ? "Analyzing..." : primaryAction.title,
-                isEnabled: !isAnalyzing
+                isEnabled: !isAnalyzing,
+                isLoading: isAnalyzing
             ) {
                 handlePrimaryAction()
             }
@@ -141,10 +142,12 @@ struct DetectorView: View {
     }
 
     private func setSelectedImage(_ image: UIImage, uploadData: Data, fileName: String) {
-        selectedImage = image
-        selectedImageData = uploadData
-        selectedImageFileName = fileName
-        resetAnalysisState()
+        withAnimation(.spring(response: 0.32, dampingFraction: 0.9)) {
+            selectedImage = image
+            selectedImageData = uploadData
+            selectedImageFileName = fileName
+            resetAnalysisState()
+        }
     }
 
     private func resetAnalysisState() {
@@ -154,12 +157,14 @@ struct DetectorView: View {
 
     private func clearSelection() {
         activeAnalysisID = UUID()
-        photoItem = nil
-        selectedImage = nil
-        selectedImageData = nil
-        selectedImageFileName = nil
-        isAnalyzing = false
-        resetAnalysisState()
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.9)) {
+            photoItem = nil
+            selectedImage = nil
+            selectedImageData = nil
+            selectedImageFileName = nil
+            isAnalyzing = false
+            resetAnalysisState()
+        }
     }
 
     private func handlePhotoSelectionChange(_ new: PhotosPickerItem?) {
@@ -203,12 +208,16 @@ struct DetectorView: View {
         let requestID = UUID()
 
         activeAnalysisID = requestID
-        isAnalyzing = true
-        resetAnalysisState()
+        withAnimation(.spring(response: 0.28, dampingFraction: 0.92)) {
+            isAnalyzing = true
+            resetAnalysisState()
+        }
 
         defer {
             if activeAnalysisID == requestID {
-                isAnalyzing = false
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.9)) {
+                    isAnalyzing = false
+                }
             }
         }
 
@@ -220,10 +229,14 @@ struct DetectorView: View {
             )
 
             guard activeAnalysisID == requestID else { return }
-            analysisResult = result
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.86)) {
+                analysisResult = result
+            }
         } catch {
             guard activeAnalysisID == requestID else { return }
-            analysisError = error.localizedDescription
+            withAnimation(.spring(response: 0.32, dampingFraction: 0.9)) {
+                analysisError = error.localizedDescription
+            }
         }
     }
 }

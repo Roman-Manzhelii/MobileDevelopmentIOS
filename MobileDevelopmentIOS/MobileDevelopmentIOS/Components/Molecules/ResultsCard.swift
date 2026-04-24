@@ -75,14 +75,15 @@ struct ResultsCard: View {
     }
 
     private func selectedImageContent(_ image: UIImage) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
+        ZStack(alignment: .bottom) {
             Image(uiImage: image)
                 .resizable()
-                .scaledToFit()
+                .scaledToFill()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .clipped()
                 .clipShape(RoundedRectangle(cornerRadius: 12))
 
-            resultContent
+            resultOverlay
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .overlay(alignment: .topTrailing) {
@@ -102,6 +103,9 @@ struct ResultsCard: View {
                 .padding(4)
             }
         }
+        .animation(.spring(response: 0.38, dampingFraction: 0.88), value: isAnalyzing)
+        .animation(.spring(response: 0.42, dampingFraction: 0.86), value: analysisResult != nil)
+        .animation(.spring(response: 0.42, dampingFraction: 0.86), value: errorMessage != nil)
     }
 
     private var placeholderContent: some View {
@@ -137,32 +141,44 @@ struct ResultsCard: View {
     }
 
     @ViewBuilder
-    private var resultContent: some View {
-        if isAnalyzing {
-            HStack(spacing: 10) {
-                ProgressView()
-                    .tint(Color.ffGold)
-                Text("Checking image...")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Color.ffTextPrimary)
-            }
-        } else if let analysisResult {
-            VStack(alignment: .leading, spacing: 6) {
-                let zone = detectionZone(for: analysisResult)
+    private var resultOverlay: some View {
+        if let analysisResult {
+            overlayPanel {
+                VStack(alignment: .leading, spacing: 6) {
+                    let zone = detectionZone(for: analysisResult)
 
-                Text(zone.headline)
-                    .font(.title3.weight(.bold))
-                    .foregroundStyle(zone.color)
+                    Text(zone.headline)
+                        .font(.title3.weight(.bold))
+                        .foregroundStyle(zone.color)
 
-                Text(zone.summary)
-                    .font(.subheadline)
-                    .foregroundStyle(Color.ffTextMuted)
+                    Text(zone.summary)
+                        .font(.subheadline)
+                        .foregroundStyle(Color.ffTextMuted)
+                }
             }
+            .transition(.move(edge: .bottom).combined(with: .opacity))
         } else if let errorMessage {
-            Text(errorMessage)
-                .font(.caption)
-                .foregroundStyle(Color.ffRed)
+            overlayPanel {
+                Text(errorMessage)
+                    .font(.caption)
+                    .foregroundStyle(Color.ffRed)
+            }
+            .transition(.move(edge: .bottom).combined(with: .opacity))
         }
+    }
+
+    private func overlayPanel<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        content()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .strokeBorder(Color.ffBorder.opacity(0.7), lineWidth: 1)
+            )
+            .padding(.horizontal, 12)
+            .padding(.bottom, 12)
     }
 
     private func detectionZone(for result: AiclipseCheckResponse) -> DetectionZone {
