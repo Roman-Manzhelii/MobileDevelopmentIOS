@@ -21,7 +21,7 @@ final class HistoryManager: ObservableObject {
     }()
 
     func load(using modelContext: ModelContext) {
-        var descriptor = FetchDescriptor<ScanRecord>(
+        let descriptor = FetchDescriptor<ScanRecord>(
             sortBy: [SortDescriptor(\.timestamp, order: .reverse)]
         )
 

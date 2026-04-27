@@ -39,8 +39,13 @@ struct HomeView: View {
 
                 SectionLabel(title: "Recent Activity")
                 VStack(spacing: 10) {
-                    ForEach(homeManager.recentActivity, id: \.0) { row in
-                        HistoryRow(filename: row.0, timestamp: row.1, badgeText: row.2)
+                    ForEach(homeManager.recentActivity) { row in
+                        HistoryRow(
+                            filename: row.filename,
+                            timestamp: row.timestamp,
+                            badgeText: row.badgePrimary,
+                            secondaryBadge: row.badgeSecondary
+                        )
                     }
                 }
             }
