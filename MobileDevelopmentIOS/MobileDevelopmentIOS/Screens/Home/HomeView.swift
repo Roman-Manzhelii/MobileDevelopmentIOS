@@ -10,16 +10,9 @@ import SwiftUI
 struct HomeView: View {
     @Binding var selectedTab: FFTab
 
-    private let stats: [StatItem] = [
-        StatItem(value: "12", label: "Scans this week"),
-        StatItem(value: "74%", label: "Game accuracy"),
-        StatItem(value: "3🔥", label: "Day streak")
-    ]
+    @Environment(\.modelContext) private var modelContext
+    @StateObject private var homeManager = HomeManager()
 
-    private let recentActivity: [(String, String, String)] = [
-        ("Image_001.jpg", "Today, 2:14 PM", "85% AI"),
-        ("Image_002.jpg", "Today, 11:03 AM", "12% AI")
-    ]
 
     var body: some View {
         ScrollView {
@@ -42,17 +35,25 @@ struct HomeView: View {
                 }
 
                 SectionLabel(title: "At-a-Glance Stats")
-                Stats3Grid(items: stats)
+                Stats3Grid(items: homeManager.stats)
 
                 SectionLabel(title: "Recent Activity")
                 VStack(spacing: 10) {
-                    ForEach(recentActivity, id: \.0) { row in
-                        HistoryRow(filename: row.0, timestamp: row.1, badgeText: row.2)
+                    ForEach(homeManager.recentActivity) { row in
+                        HistoryRow(
+                            filename: row.filename,
+                            timestamp: row.timestamp,
+                            badgeText: row.badgePrimary,
+                            secondaryBadge: row.badgeSecondary
+                        )
                     }
                 }
             }
             .padding(.horizontal, 18)
             .padding(.bottom, 20)
+        }
+        .onAppear {
+            homeManager.loadRecent(using: modelContext, limit: 2)
         }
     }
 }

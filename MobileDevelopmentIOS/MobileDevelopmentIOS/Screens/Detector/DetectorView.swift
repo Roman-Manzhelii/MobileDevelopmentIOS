@@ -8,9 +8,13 @@
 import PhotosUI
 import SwiftUI
 import UIKit
+import SwiftData
 
 struct DetectorView: View {
-    private enum PrimaryAction {
+    
+    @Environment(\.modelContext) private var modelContext
+
+        private enum PrimaryAction {
         case chooseImage
         case analyze
         case chooseAnotherImage
@@ -220,14 +224,27 @@ struct DetectorView: View {
             withAnimation(.spring(response: 0.4, dampingFraction: 0.86)) {
                 analysisResult = result
             }
+
+            await saveScanRecord(fileName: fileName, aiProbability: result.aiProbability, verdictLabel: result.displayLabel)
         } catch {
             guard activeAnalysisID == requestID else { return }
             withAnimation(.spring(response: 0.32, dampingFraction: 0.9)) {
                 analysisError = error.localizedDescription
             }
+            }
+        }
+
+        @MainActor
+        private func saveScanRecord(fileName: String, aiProbability: Double, verdictLabel: String) {
+            let record = ScanRecord(imageFileName: fileName, aiProbability: aiProbability, verdictLabel: verdictLabel)
+            modelContext.insert(record)
+            do {
+                try modelContext.save()
+            } catch {
+                analysisError = "Scan succeeded, but failed to save history: \(error.localizedDescription)"
+            }
         }
     }
-}
 
 private struct PhotoLibraryPicker: UIViewControllerRepresentable {
     @Binding var isPresented: Bool
