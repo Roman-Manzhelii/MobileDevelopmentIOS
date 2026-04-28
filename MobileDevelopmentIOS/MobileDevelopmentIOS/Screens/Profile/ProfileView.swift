@@ -6,16 +6,25 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct ProfileView: View {
-    private let metrics: [MetricItem] = [
-        MetricItem(value: "47", label: "Images Analyzed"),
-        MetricItem(value: "132", label: "Cards Swiped"),
-        MetricItem(value: "5🔥", label: "Day Streak"),
-        MetricItem(value: "72%", label: "Accuracy"),
-        MetricItem(value: "95", label: "Correct Swipes"),
-        MetricItem(value: "37", label: "Wrong Swipes")
-    ]
+    @Query private var profiles: [UserProfile]
+
+    private var profile: UserProfile? {
+        profiles.first
+    }
+
+    private var metrics: [MetricItem] {
+        [
+            MetricItem(value: "\(profile?.imagesAnalyzed ?? 0)", label: "Images Analyzed"),
+            MetricItem(value: "132", label: "Cards Swiped"),
+            MetricItem(value: "\(profile?.currentStreak ?? 0)🔥", label: "Day Streak"),
+            MetricItem(value: "72%", label: "Accuracy"),
+            MetricItem(value: "95", label: "Correct Swipes"),
+            MetricItem(value: "37", label: "Wrong Swipes")
+        ]
+    }
 
     var body: some View {
         ScrollView {
@@ -24,9 +33,6 @@ struct ProfileView: View {
                     Text("Profile & Stats")
                         .font(.title2.weight(.bold))
                         .foregroundStyle(Color.ffTextPrimary)
-                    Text("Screen 5 — Gamification & Settings")
-                        .font(.caption)
-                        .foregroundStyle(Color.ffTextMuted)
                 }
                 .padding(.top, 8)
 

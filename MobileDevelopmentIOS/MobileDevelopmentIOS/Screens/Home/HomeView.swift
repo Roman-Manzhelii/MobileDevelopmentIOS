@@ -53,6 +53,7 @@ struct HomeView: View {
             .padding(.bottom, 20)
         }
         .onAppear {
+            homeManager.recordDailyActivity(using: modelContext)
             homeManager.loadRecent(using: modelContext, limit: 2)
         }
     }
