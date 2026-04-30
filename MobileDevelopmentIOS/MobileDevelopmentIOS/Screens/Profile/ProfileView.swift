@@ -51,10 +51,6 @@ struct ProfileView: View {
 
                 SectionLabel(title: "Metrics")
                 MetricsGrid(items: metrics)
-
-                Text("● All metrics from SwiftData GameSession + ScanRecord")
-                    .font(.caption2)
-                    .foregroundStyle(Color.ffTextMuted)
             }
             .padding(.horizontal, 18)
             .padding(.bottom, 20)
@@ -74,7 +70,6 @@ struct ProfileView: View {
                     RoundedRectangle(cornerRadius: 12)
                         .strokeBorder(Color.ffBorder, lineWidth: 1)
                 )
-
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 8) {
                     Text("User Name")
@@ -82,9 +77,6 @@ struct ProfileView: View {
                         .foregroundStyle(Color.ffTextPrimary)
                     Badge(text: "1")
                 }
-                Text("Member since Jan 2026")
-                    .font(.caption)
-                    .foregroundStyle(Color.ffTextMuted)
             }
 
             Spacer(minLength: 0)
