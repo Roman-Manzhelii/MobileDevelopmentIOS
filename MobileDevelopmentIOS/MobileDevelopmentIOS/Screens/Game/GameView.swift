@@ -10,6 +10,8 @@ import UIKit
 import Shuffle
 
 struct GameView: View {
+    private let feedbackDisplayDuration: TimeInterval = 1.5
+
     @Query private var profiles: [UserProfile]
 
     @State private var gameManager = GameManager()
@@ -98,12 +100,19 @@ struct GameView: View {
 
             if let lastResult {
                 FeedbackToast(result: lastResult)
+                    .id(lastResult.id)
                     .padding(.horizontal, 8)
                     .padding(.bottom, 8)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .transition(
+                        .asymmetric(
+                            insertion: .move(edge: .bottom).combined(with: .opacity),
+                            removal: .opacity.combined(with: .scale(scale: 0.96, anchor: .bottom))
+                        )
+                    )
                     .allowsHitTesting(false)
             }
         }
+        .animation(.spring(response: 0.38, dampingFraction: 0.9), value: lastResult?.id)
     }
 
     private var activeRoundState: some View {
@@ -199,14 +208,23 @@ struct GameView: View {
         let guessedReal = direction == .right
         let isCorrect = guessedReal == card.isReal
         let dismissID = UUID()
+        let feedback = GuessFeedback(
+            card: card,
+            guessedReal: guessedReal,
+            isCorrect: isCorrect
+        )
+
+        if lastResult != nil {
+            var transaction = Transaction()
+            transaction.animation = nil
+            withTransaction(transaction) {
+                lastResult = nil
+            }
+        }
 
         withAnimation(.spring(response: 0.35, dampingFraction: 0.88)) {
             answeredCount = min(index + 1, roundCards.count)
-            lastResult = GuessFeedback(
-                card: card,
-                guessedReal: guessedReal,
-                isCorrect: isCorrect
-            )
+            lastResult = feedback
             feedbackDismissID = dismissID
         }
 
@@ -229,10 +247,10 @@ struct GameView: View {
     }
 
     private func scheduleFeedbackDismissal(for dismissID: UUID) {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.85) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + feedbackDisplayDuration) {
             guard feedbackDismissID == dismissID else { return }
 
-            withAnimation(.spring(response: 0.24, dampingFraction: 0.92)) {
+            withAnimation(.easeOut(duration: 0.34)) {
                 lastResult = nil
             }
         }
