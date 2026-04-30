@@ -35,10 +35,6 @@ struct HistoryView: View {
                     .fill(Color.ffBorder)
                     .frame(height: 1)
 
-                Text("● Fetched from SwiftData ScanRecord — chronological list")
-                    .font(.caption2)
-                    .foregroundStyle(Color.ffTextMuted)
-
                 VStack(spacing: 10) {
                     ForEach(viewModel.items) { item in
                         HistoryRow(
