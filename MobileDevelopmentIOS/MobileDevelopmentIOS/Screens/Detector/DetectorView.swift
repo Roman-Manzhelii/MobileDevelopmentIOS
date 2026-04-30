@@ -225,7 +225,7 @@ struct DetectorView: View {
                 analysisResult = result
             }
 
-            await saveScanRecord(fileName: fileName, aiProbability: result.aiProbability, verdictLabel: result.displayLabel)
+            saveScanRecord(fileName: fileName, aiProbability: result.aiProbability, verdictLabel: result.displayLabel)
         } catch {
             guard activeAnalysisID == requestID else { return }
             withAnimation(.spring(response: 0.32, dampingFraction: 0.9)) {
