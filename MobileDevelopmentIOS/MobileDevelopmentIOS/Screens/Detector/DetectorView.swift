@@ -11,6 +11,7 @@ import SwiftUI
 import UIKit
 
 struct DetectorView: View {
+    @EnvironmentObject private var activeUserManager: ActiveUserManager
     @Environment(\.modelContext) private var modelContext
 
     private enum PrimaryAction {
@@ -226,6 +227,7 @@ struct DetectorView: View {
 
             saveScanRecord(
                 fileName: fileName,
+                imageData: selectedImageData,
                 aiProbability: result.aiProbability,
                 verdictLabel: result.displayLabel
             )
@@ -238,25 +240,32 @@ struct DetectorView: View {
     }
 
     @MainActor
-    private func saveScanRecord(fileName: String, aiProbability: Double, verdictLabel: String) {
-        let record = ScanRecord(
-            imageFileName: fileName,
-            aiProbability: aiProbability,
-            verdictLabel: verdictLabel
-        )
-        modelContext.insert(record)
-
+    private func saveScanRecord(fileName: String, imageData: Data, aiProbability: Double, verdictLabel: String) {
         do {
             let descriptor = FetchDescriptor<UserProfile>()
+            let allProfiles = try modelContext.fetch(descriptor)
+            let selectedUUID = UUID(uuidString: activeUserManager.activeUserID)
             let profile: UserProfile
 
-            if let existing = try modelContext.fetch(descriptor).first {
+            if let selectedUUID,
+               let selectedProfile = allProfiles.first(where: { $0.id == selectedUUID }) {
+                profile = selectedProfile
+            } else if let existing = allProfiles.first {
                 profile = existing
             } else {
-                let created = UserProfile()
+                let created = UserProfile(displayName: "User")
                 modelContext.insert(created)
                 profile = created
             }
+
+            let record = ScanRecord(
+                userProfileID: profile.id,
+                imageFileName: fileName,
+                imageData: imageData,
+                aiProbability: aiProbability,
+                verdictLabel: verdictLabel
+            )
+            modelContext.insert(record)
 
             profile.imagesAnalyzed += 1
             try modelContext.save()

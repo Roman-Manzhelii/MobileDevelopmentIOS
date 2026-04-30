@@ -10,21 +10,37 @@ import SwiftUI
 import UIKit
 
 struct ProfileView: View {
+    @EnvironmentObject private var activeUserManager: ActiveUserManager
+    @Environment(\.modelContext) private var modelContext
+    @StateObject private var statsManager = StatsManager()
     @AppStorage("haptics_enabled") private var hapticsEnabled = true
-    @Query private var profiles: [UserProfile]
 
     private var profile: UserProfile? {
-        profiles.first
+        activeUserManager.selectedProfile(using: modelContext)
+    }
+
+    private var accuracyPercentText: String {
+        "\(Int((statsManager.accuracyProgress * 100).rounded()))%"
+    }
+
+    private var displayName: String {
+        guard let profile else { return "User" }
+        return profile.displayName
+    }
+
+    private var levelText: String {
+        let level = max(1, ((profile?.imagesAnalyzed ?? 0) / 25) + 1)
+        return "\(level)"
     }
 
     private var metrics: [MetricItem] {
         [
             MetricItem(value: "\(profile?.imagesAnalyzed ?? 0)", label: "Images Analyzed"),
-            MetricItem(value: "\(profile?.seenGameCardIDs.count ?? 0)", label: "Cards Swiped"),
-            MetricItem(value: "\(profile?.currentStreak ?? 0)", label: "Day Streak"),
-            MetricItem(value: "72%", label: "Accuracy"),
-            MetricItem(value: "95", label: "Correct Swipes"),
-            MetricItem(value: "37", label: "Wrong Swipes")
+            MetricItem(value: "\(statsManager.scansCount)", label: "Cards Swiped"),
+            MetricItem(value: "\(statsManager.dayStreak)", label: "Day Streak"),
+            MetricItem(value: accuracyPercentText, label: "Accuracy"),
+            MetricItem(value: "\(statsManager.correctSwipes)", label: "Correct Swipes"),
+            MetricItem(value: "\(statsManager.wrongSwipes)", label: "Wrong Swipes")
         ]
     }
 
@@ -46,13 +62,29 @@ struct ProfileView: View {
                     .frame(height: 1)
 
                 userRow
+                Button("Change User") {
+                    activeUserManager.clearActiveUser()
+                }
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(Color.ffTextPrimary)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 10)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.ffCard)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .strokeBorder(Color.ffBorder, lineWidth: 1)
+                        )
+                )
+                .buttonStyle(.plain)
 
                 Rectangle()
                     .fill(Color.ffBorder)
                     .frame(height: 1)
 
                 SectionLabel(title: "Overall Game Accuracy")
-                AccuracyRing(progress: 0.72)
+                AccuracyRing(progress: statsManager.accuracyProgress)
 
                 SectionLabel(title: "Metrics")
                 MetricsGrid(items: metrics)
@@ -66,6 +98,9 @@ struct ProfileView: View {
             }
             .padding(.horizontal, 18)
             .padding(.bottom, 20)
+        }
+        .onAppear {
+            statsManager.refreshStats(using: modelContext, activeUserID: activeUserManager.activeUserID)
         }
     }
 
@@ -86,10 +121,10 @@ struct ProfileView: View {
 
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 8) {
-                    Text("User Name")
+                    Text(displayName)
                         .font(.headline.weight(.semibold))
                         .foregroundStyle(Color.ffTextPrimary)
-                    Badge(text: "1")
+                    Badge(text: levelText)
                 }
 
                 Text("Current streak: \(profile?.currentStreak ?? 0) days")
@@ -162,6 +197,7 @@ struct ProfileView: View {
 
 #Preview {
     ProfileView()
+        .environmentObject(ActiveUserManager())
         .modelContainer(for: [UserProfile.self], inMemory: true)
         .background(Color.ffBackground)
 }

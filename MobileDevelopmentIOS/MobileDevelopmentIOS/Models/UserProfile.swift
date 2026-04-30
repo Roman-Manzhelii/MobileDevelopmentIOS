@@ -8,6 +8,7 @@ import SwiftData
 @Model
 class UserProfile {
     @Attribute(.unique) var id: UUID
+    var displayName: String
     var seenGameCardIDs: [String]
     var currentStreak: Int
     var longestStreak: Int
@@ -16,6 +17,7 @@ class UserProfile {
 
     init(
         id: UUID = UUID(),
+        displayName: String = "User",
         seenGameCardIDs: [String] = [],
         currentStreak: Int = 0,
         longestStreak: Int = 0,
@@ -23,6 +25,7 @@ class UserProfile {
         imagesAnalyzed: Int = 0
     ) {
         self.id = id
+        self.displayName = displayName
         self.seenGameCardIDs = seenGameCardIDs
         self.currentStreak = currentStreak
         self.longestStreak = longestStreak

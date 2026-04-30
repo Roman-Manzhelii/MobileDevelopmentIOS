@@ -10,10 +10,11 @@ import UIKit
 import Shuffle
 
 struct GameView: View {
+    @EnvironmentObject private var activeUserManager: ActiveUserManager
+    @Environment(\.modelContext) private var context
     private let feedbackDisplayDuration: TimeInterval = 1.5
 
     @AppStorage("haptics_enabled") private var hapticsEnabled = true
-    @Query private var profiles: [UserProfile]
 
     @State private var gameManager = GameManager()
     @State private var roundCards: [GameCardData] = []
@@ -179,7 +180,8 @@ struct GameView: View {
     }
 
     private func getUnseenCards() -> [GameCardData] {
-        guard let userProfile = profiles.first else { return gameManager.cards }
+        let userProfile = activeUserManager.selectedProfile(using: context)
+        guard let userProfile else { return gameManager.cards }
         let unseenCards = gameManager.cards.filter { !userProfile.seenGameCardIDs.contains($0.id) }
         return unseenCards.isEmpty ? gameManager.cards : unseenCards
     }
