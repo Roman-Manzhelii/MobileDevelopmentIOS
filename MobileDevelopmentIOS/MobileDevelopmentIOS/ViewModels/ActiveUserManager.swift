@@ -1,5 +1,6 @@
 import Foundation
 import SwiftData
+import Combine
 
 class ActiveUserManager: ObservableObject {
     private let storageKey = "activeUserID"

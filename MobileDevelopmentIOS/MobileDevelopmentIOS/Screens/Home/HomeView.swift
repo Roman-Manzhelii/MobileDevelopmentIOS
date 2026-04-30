@@ -17,8 +17,15 @@ struct HomeView: View {
     @StateObject private var statsManager = StatsManager()
     @Query(sort: \ScanRecord.timestamp, order: .reverse) private var scanRecords: [ScanRecord]
 
+    private var filteredScans: [ScanRecord] {
+        guard let selectedUUID = activeUserManager.selectedUserUUID else {
+            return scanRecords
+        }
+        return scanRecords.filter { $0.userProfileID == selectedUUID }
+    }
+
     private var recentScans: [ScanRecord] {
-        Array(scanRecords.prefix(2))
+        Array(filteredScans.prefix(2))
     }
 
     private let dateFormatter: DateFormatter = {

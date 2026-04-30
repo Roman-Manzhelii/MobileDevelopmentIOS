@@ -18,10 +18,14 @@ class StatsManager: ObservableObject {
 
     func refreshStats(using modelContext: ModelContext, activeUserID: String = "") {
         do {
-            let recentScans = try modelContext.fetch(FetchDescriptor<ScanRecord>())
+            let allScans = try modelContext.fetch(FetchDescriptor<ScanRecord>())
             let allProfiles = try modelContext.fetch(FetchDescriptor<UserProfile>())
             let selectedUUID = UUID(uuidString: activeUserID)
             let profile = allProfiles.first(where: { $0.id == selectedUUID }) ?? allProfiles.first
+            let recentScans = allScans.filter { record in
+                guard let selectedUUID else { return true }
+                return record.userProfileID == selectedUUID
+            }
 
             let scansThisWeek = recentScans.count
             var totalProbability = 0.0

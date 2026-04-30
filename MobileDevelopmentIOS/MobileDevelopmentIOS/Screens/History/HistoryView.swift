@@ -9,6 +9,7 @@ import SwiftData
 import SwiftUI
 
 struct HistoryView: View {
+    @EnvironmentObject private var activeUserManager: ActiveUserManager
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \ScanRecord.timestamp, order: .reverse) private var records: [ScanRecord]
 
@@ -17,6 +18,13 @@ struct HistoryView: View {
         formatter.dateFormat = "MMM d, yyyy · h:mm a"
         return formatter
     }()
+
+    private var filteredRecords: [ScanRecord] {
+        guard let selectedUUID = activeUserManager.selectedUserUUID else {
+            return records
+        }
+        return records.filter { $0.userProfileID == selectedUUID }
+    }
 
     var body: some View {
         ScrollView {
@@ -42,7 +50,7 @@ struct HistoryView: View {
                     .frame(height: 1)
 
                 VStack(spacing: 10) {
-                    ForEach(records, id: \.id) { record in
+                    ForEach(filteredRecords, id: \.id) { record in
                         HistoryRow(
                             timestamp: dateFormatter.string(from: record.timestamp),
                             verdict: record.verdictLabel,
@@ -51,7 +59,7 @@ struct HistoryView: View {
                     }
                 }
 
-                if records.isEmpty {
+                if filteredRecords.isEmpty {
                     Text("No scans yet")
                         .font(.subheadline)
                         .foregroundStyle(Color.ffTextMuted)
@@ -66,7 +74,7 @@ struct HistoryView: View {
 
     private func clearAll() {
         do {
-            for record in records {
+            for record in filteredRecords {
                 modelContext.delete(record)
             }
             try modelContext.save()
@@ -78,6 +86,7 @@ struct HistoryView: View {
 
 #Preview {
     HistoryView()
+        .environmentObject(ActiveUserManager())
         .modelContainer(for: ScanRecord.self, inMemory: true)
         .background(Color.ffBackground)
 }
