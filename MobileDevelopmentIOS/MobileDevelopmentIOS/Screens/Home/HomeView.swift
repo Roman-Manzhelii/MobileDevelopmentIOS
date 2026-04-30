@@ -5,6 +5,7 @@
 //  Created by Student on 23/03/2026.
 //
 
+import SwiftData
 import SwiftUI
 
 struct HomeView: View {
@@ -14,12 +15,22 @@ struct HomeView: View {
     @Environment(\.modelContext) private var modelContext
     @StateObject private var homeManager = HomeManager()
     @StateObject private var statsManager = StatsManager()
+    @Query(sort: \ScanRecord.timestamp, order: .reverse) private var scanRecords: [ScanRecord]
 
+    private var recentScans: [ScanRecord] {
+        Array(scanRecords.prefix(2))
+    }
+
+    private let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d, yyyy · h:mm a"
+        return formatter
+    }()
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                Text("👋 Welcome back")
+                Text("Welcome back")
                     .font(.title2.weight(.bold))
                     .foregroundStyle(Color.ffTextPrimary)
                     .padding(.top, 8)
@@ -33,7 +44,9 @@ struct HomeView: View {
                     QuickActionCard(systemImage: "camera.viewfinder", title: "Detector") {
                         selectedTab = .detector
                     }
-                    QuickActionCard(systemImage: "rectangle.stack.fill.badge.play", title: "Swiper") {}
+                    QuickActionCard(systemImage: "gamecontroller.fill", title: "Play Game") {
+                        selectedTab = .game
+                    }
                 }
 
                 SectionLabel(title: "At-a-Glance Stats")
@@ -41,12 +54,12 @@ struct HomeView: View {
 
                 SectionLabel(title: "Recent Activity")
                 VStack(spacing: 10) {
-                    ForEach(homeManager.recentActivity) { row in
+                    ForEach(recentScans, id: \.id) { record in
                         HistoryRow(
-                            filename: row.filename,
-                            timestamp: row.timestamp,
-                            badgeText: row.badgePrimary,
-                            secondaryBadge: row.badgeSecondary
+                            filename: record.imageFileName,
+                            timestamp: dateFormatter.string(from: record.timestamp),
+                            badgeText: "\(Int((record.aiProbability * 100).rounded()))%",
+                            secondaryBadge: record.verdictLabel
                         )
                     }
                 }
@@ -57,7 +70,6 @@ struct HomeView: View {
         .onAppear {
             homeManager.recordDailyActivity(using: modelContext, activeUserID: activeUserManager.activeUserID)
             statsManager.refreshStats(using: modelContext, activeUserID: activeUserManager.activeUserID)
-            homeManager.loadRecent(using: modelContext, limit: 2)
         }
     }
 }
@@ -65,5 +77,6 @@ struct HomeView: View {
 #Preview {
     HomeView(selectedTab: .constant(.home))
         .environmentObject(ActiveUserManager())
+        .modelContainer(for: [ScanRecord.self, UserProfile.self], inMemory: true)
         .background(Color.ffBackground)
 }

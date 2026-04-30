@@ -23,7 +23,7 @@ struct MainView: View {
                         case .detector:
                             DetectorView()
                         case .game:
-                            Text("Game View")
+                            GameView()
                         case .history:
                             HistoryView()
                         case .profile:

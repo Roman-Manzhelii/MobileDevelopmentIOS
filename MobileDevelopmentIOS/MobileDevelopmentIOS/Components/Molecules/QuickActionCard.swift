@@ -43,7 +43,7 @@ struct QuickActionCard: View {
 #Preview {
     HStack(spacing: 12) {
         QuickActionCard(systemImage: "camera.viewfinder", title: "Detector") {}
-        QuickActionCard(systemImage: "hand.draw", title: "Swiper") {}
+        QuickActionCard(systemImage: "gamecontroller.fill", title: "Play Game") {}
     }
     .padding()
     .background(Color.ffBackground)

@@ -5,13 +5,15 @@
 //  Created by Student on 23/03/2026.
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
+import UIKit
 
 struct ProfileView: View {
     @EnvironmentObject private var activeUserManager: ActiveUserManager
     @Environment(\.modelContext) private var modelContext
     @StateObject private var statsManager = StatsManager()
+    @AppStorage("haptics_enabled") private var hapticsEnabled = true
 
     private var profile: UserProfile? {
         activeUserManager.selectedProfile(using: modelContext)
@@ -35,7 +37,7 @@ struct ProfileView: View {
         [
             MetricItem(value: "\(profile?.imagesAnalyzed ?? 0)", label: "Images Analyzed"),
             MetricItem(value: "\(statsManager.scansCount)", label: "Cards Swiped"),
-            MetricItem(value: "\(statsManager.dayStreak)🔥", label: "Day Streak"),
+            MetricItem(value: "\(statsManager.dayStreak)", label: "Day Streak"),
             MetricItem(value: accuracyPercentText, label: "Accuracy"),
             MetricItem(value: "\(statsManager.correctSwipes)", label: "Correct Swipes"),
             MetricItem(value: "\(statsManager.wrongSwipes)", label: "Wrong Swipes")
@@ -49,6 +51,9 @@ struct ProfileView: View {
                     Text("Profile & Stats")
                         .font(.title2.weight(.bold))
                         .foregroundStyle(Color.ffTextPrimary)
+                    Text("Game settings and progress")
+                        .font(.caption)
+                        .foregroundStyle(Color.ffTextMuted)
                 }
                 .padding(.top, 8)
 
@@ -83,6 +88,13 @@ struct ProfileView: View {
 
                 SectionLabel(title: "Metrics")
                 MetricsGrid(items: metrics)
+
+                SectionLabel(title: "Settings")
+                hapticsButton
+
+                Text("All metrics come from SwiftData models.")
+                    .font(.caption2)
+                    .foregroundStyle(Color.ffTextMuted)
             }
             .padding(.horizontal, 18)
             .padding(.bottom, 20)
@@ -98,13 +110,15 @@ struct ProfileView: View {
                 .fill(Color.ffElevated)
                 .frame(width: 62, height: 62)
                 .overlay(
-                    Text("👤")
-                        .font(.title)
+                    Image(systemName: "person.fill")
+                        .font(.title2)
+                        .foregroundStyle(Color.ffTextPrimary)
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
                         .strokeBorder(Color.ffBorder, lineWidth: 1)
                 )
+
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 8) {
                     Text(displayName)
@@ -112,6 +126,10 @@ struct ProfileView: View {
                         .foregroundStyle(Color.ffTextPrimary)
                     Badge(text: levelText)
                 }
+
+                Text("Current streak: \(profile?.currentStreak ?? 0) days")
+                    .font(.caption)
+                    .foregroundStyle(Color.ffTextMuted)
             }
 
             Spacer(minLength: 0)
@@ -126,10 +144,60 @@ struct ProfileView: View {
                 )
         )
     }
+
+    private var hapticsButton: some View {
+        Button(action: toggleHaptics) {
+            HStack(spacing: 14) {
+                Image(systemName: hapticsEnabled ? "iphone.radiowaves.left.and.right" : "iphone.slash")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(hapticsEnabled ? Color.ffGold : Color.ffTextMuted)
+                    .frame(width: 44, height: 44)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(Color.ffElevated)
+                    )
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Haptics")
+                        .font(.headline.weight(.semibold))
+                        .foregroundStyle(Color.ffTextPrimary)
+
+                    Text(hapticsEnabled ? "On for wrong guesses" : "Off")
+                        .font(.caption)
+                        .foregroundStyle(Color.ffTextMuted)
+                }
+
+                Spacer(minLength: 0)
+
+                Badge(text: hapticsEnabled ? "On" : "Off")
+            }
+            .padding(14)
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(Color.ffCard)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14)
+                            .strokeBorder(Color.ffBorder, lineWidth: 1)
+                    )
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func toggleHaptics() {
+        let shouldEnable = !hapticsEnabled
+        hapticsEnabled = shouldEnable
+
+        guard shouldEnable else { return }
+
+        let generator = UINotificationFeedbackGenerator()
+        generator.notificationOccurred(.success)
+    }
 }
 
 #Preview {
     ProfileView()
         .environmentObject(ActiveUserManager())
+        .modelContainer(for: [UserProfile.self], inMemory: true)
         .background(Color.ffBackground)
 }

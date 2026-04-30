@@ -14,13 +14,13 @@ struct FakeFinderApp: App {
 
     private let modelContainer: ModelContainer
     init() {
+        let schema = Schema([
+            ScanRecord.self,
+            GameSession.self,
+            UserProfile.self
+        ])
+
         do {
-            let schema = Schema([
-                ScanRecord.self, 
-                GameSession.self, 
-                UserProfile.self
-            ])
-            
             let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
             modelContainer = try ModelContainer(for: schema, configurations: [modelConfiguration])
         } catch {
