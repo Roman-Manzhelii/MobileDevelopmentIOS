@@ -5,12 +5,10 @@
 //  Created by Student on 23/03/2026.
 //
 
-import SwiftData
 import SwiftUI
 
 struct ProfileView: View {
-    @Environment(\.modelContext) private var context
-    @Query private var profiles: [UserProfile]
+    @AppStorage("haptics_enabled") private var hapticsEnabled = true
 
     private let metrics: [MetricItem] = [
         MetricItem(value: "47", label: "Images Analyzed"),
@@ -60,10 +58,6 @@ struct ProfileView: View {
             .padding(.horizontal, 18)
             .padding(.bottom, 20)
         }
-    }
-
-    private var hapticsEnabled: Bool {
-        profiles.first?.hapticsEnabled ?? true
     }
 
     private var userRow: some View {
@@ -146,17 +140,11 @@ struct ProfileView: View {
     }
 
     private func toggleHaptics() {
-        if let profile = profiles.first {
-            profile.hapticsEnabled.toggle()
-            return
-        }
-
-        context.insert(UserProfile(hapticsEnabled: false))
+        hapticsEnabled.toggle()
     }
 }
 
 #Preview {
     ProfileView()
-        .modelContainer(for: UserProfile.self, inMemory: true)
         .background(Color.ffBackground)
 }

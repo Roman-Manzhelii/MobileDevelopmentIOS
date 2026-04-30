@@ -12,6 +12,7 @@ import Shuffle
 struct GameView: View {
     private let feedbackDisplayDuration: TimeInterval = 1.5
 
+    @AppStorage("haptics_enabled") private var hapticsEnabled = true
     @Query private var profiles: [UserProfile]
 
     @State private var gameManager = GameManager()
@@ -181,10 +182,6 @@ struct GameView: View {
         return "\(min(answeredCount, roundCards.count))/\(roundCards.count)"
     }
 
-    private var isHapticsEnabled: Bool {
-        profiles.first?.hapticsEnabled ?? true
-    }
-
     private func getUnseenCards() -> [GameCardData] {
         guard let userProfile = profiles.first else { return gameManager.cards }
         let unseenCards = gameManager.cards.filter { !userProfile.seenGameCardIDs.contains($0.id) }
@@ -261,7 +258,7 @@ struct GameView: View {
     }
 
     private func triggerHapticIfNeeded(isCorrect: Bool) {
-        guard !isCorrect, isHapticsEnabled else { return }
+        guard !isCorrect, hapticsEnabled else { return }
 
         let generator = UINotificationFeedbackGenerator()
         generator.notificationOccurred(.error)
