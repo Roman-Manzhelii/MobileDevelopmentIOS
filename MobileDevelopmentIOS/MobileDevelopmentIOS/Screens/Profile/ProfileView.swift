@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UIKit
 
 struct ProfileView: View {
     @AppStorage("haptics_enabled") private var hapticsEnabled = true
@@ -140,7 +141,13 @@ struct ProfileView: View {
     }
 
     private func toggleHaptics() {
-        hapticsEnabled.toggle()
+        let shouldEnable = !hapticsEnabled
+        hapticsEnabled = shouldEnable
+
+        guard shouldEnable else { return }
+
+        let generator = UINotificationFeedbackGenerator()
+        generator.notificationOccurred(.success)
     }
 }
 
