@@ -18,6 +18,7 @@ struct GameView: View {
     @State private var roundFinished = false
     @State private var lastResult: GuessFeedback?
     @State private var deckID = UUID()
+    @State private var feedbackDismissID = UUID()
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -86,31 +87,33 @@ struct GameView: View {
 
     @ViewBuilder
     private var content: some View {
-        if roundCards.isEmpty {
-            emptyState
-        } else if roundFinished {
-            completedState
-        } else {
-            activeRoundState
+        ZStack(alignment: .bottom) {
+            if roundCards.isEmpty {
+                emptyState
+            } else if roundFinished {
+                completedState
+            } else {
+                activeRoundState
+            }
+
+            if let lastResult {
+                FeedbackToast(result: lastResult)
+                    .padding(.horizontal, 8)
+                    .padding(.bottom, 8)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .allowsHitTesting(false)
+            }
         }
     }
 
     private var activeRoundState: some View {
-        VStack(spacing: 14) {
-            GameSwipeStackView(
-                cards: roundCards,
-                deckID: deckID,
-                onSwipe: handleSwipe,
-                onFinished: finishRound
-            )
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-            if let lastResult {
-                FeedbackCard(result: lastResult)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        GameSwipeStackView(
+            cards: roundCards,
+            deckID: deckID,
+            onSwipe: handleSwipe,
+            onFinished: finishRound
+        )
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var completedState: some View {
@@ -134,10 +137,6 @@ struct GameView: View {
                 RoundedRectangle(cornerRadius: 20, style: .continuous)
                     .stroke(Color.ffBorder, lineWidth: 1)
             )
-
-            if let lastResult {
-                FeedbackCard(result: lastResult)
-            }
 
             PrimaryButton(title: "Play Again") {
                 startRound()
@@ -188,6 +187,7 @@ struct GameView: View {
             roundFinished = false
             lastResult = nil
             deckID = UUID()
+            feedbackDismissID = UUID()
         }
     }
 
@@ -197,15 +197,21 @@ struct GameView: View {
 
         let card = roundCards[index]
         let guessedReal = direction == .right
+        let isCorrect = guessedReal == card.isReal
+        let dismissID = UUID()
 
         withAnimation(.spring(response: 0.35, dampingFraction: 0.88)) {
             answeredCount = min(index + 1, roundCards.count)
             lastResult = GuessFeedback(
                 card: card,
                 guessedReal: guessedReal,
-                isCorrect: guessedReal == card.isReal
+                isCorrect: isCorrect
             )
+            feedbackDismissID = dismissID
         }
+
+        triggerHaptic(isCorrect: isCorrect)
+        scheduleFeedbackDismissal(for: dismissID)
     }
 
     private func finishRound() {
@@ -220,6 +226,21 @@ struct GameView: View {
                 roundFinished = true
             }
         }
+    }
+
+    private func scheduleFeedbackDismissal(for dismissID: UUID) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.85) {
+            guard feedbackDismissID == dismissID else { return }
+
+            withAnimation(.spring(response: 0.24, dampingFraction: 0.92)) {
+                lastResult = nil
+            }
+        }
+    }
+
+    private func triggerHaptic(isCorrect: Bool) {
+        let generator = UINotificationFeedbackGenerator()
+        generator.notificationOccurred(isCorrect ? .success : .error)
     }
 }
 
@@ -263,44 +284,33 @@ private struct InstructionPill: View {
     }
 }
 
-private struct FeedbackCard: View {
+private struct FeedbackToast: View {
     let result: GuessFeedback
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 10) {
-                Label(result.title, systemImage: result.isCorrect ? "checkmark.seal.fill" : "xmark.octagon.fill")
-                    .font(.headline.weight(.bold))
-                    .foregroundStyle(result.highlightColor)
+        HStack(spacing: 10) {
+            Image(systemName: result.isCorrect ? "checkmark.circle.fill" : "xmark.circle.fill")
+                .font(.headline.weight(.bold))
+                .foregroundStyle(result.highlightColor)
 
-                Spacer(minLength: 0)
-
-                Text(result.actualLabel.uppercased())
-                    .font(.caption.weight(.bold))
-                    .foregroundStyle(result.actualColor)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(result.actualColor.opacity(0.12), in: Capsule())
-            }
-
-            Text(result.summary)
+            Text(result.toastText)
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(Color.ffTextPrimary)
 
-            Text(result.card.explanation)
-                .font(.footnote)
-                .foregroundStyle(Color.ffTextMuted)
+            Spacer(minLength: 0)
         }
-        .padding(16)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(Color.ffCard)
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color.ffBackground.opacity(0.96))
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(Color.ffBorder, lineWidth: 1)
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(result.highlightColor.opacity(0.35), lineWidth: 1)
         )
+        .shadow(color: Color.black.opacity(0.08), radius: 18, x: 0, y: 8)
     }
 }
 
@@ -320,6 +330,10 @@ private struct GuessFeedback: Identifiable {
 
     var title: String {
         isCorrect ? "Correct guess" : "Not this one"
+    }
+
+    var toastText: String {
+        isCorrect ? "Correct" : "Wrong - It was \(actualLabel)"
     }
 
     var summary: String {
