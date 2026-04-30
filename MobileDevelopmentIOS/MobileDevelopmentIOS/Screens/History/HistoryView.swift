@@ -5,12 +5,18 @@
 //  Created by Student on 23/03/2026.
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 struct HistoryView: View {
     @Environment(\.modelContext) private var modelContext
-    @StateObject private var viewModel = HistoryManager()
+    @Query(sort: \ScanRecord.timestamp, order: .reverse) private var records: [ScanRecord]
+
+    private let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d, yyyy · h:mm a"
+        return formatter
+    }()
 
     var body: some View {
         ScrollView {
@@ -26,7 +32,7 @@ struct HistoryView: View {
                     }
                     Spacer(minLength: 12)
                     OutlineButton(title: "Clear All") {
-                        viewModel.clearAll(using: modelContext)
+                        clearAll()
                     }
                 }
                 .padding(.top, 8)
@@ -36,18 +42,18 @@ struct HistoryView: View {
                     .frame(height: 1)
 
                 VStack(spacing: 10) {
-                    ForEach(viewModel.items) { item in
+                    ForEach(records, id: \.id) { record in
                         HistoryRow(
-                            filename: item.filename,
-                            timestamp: item.timestamp,
-                            badgeText: item.badgePrimary,
-                            secondaryBadge: item.badgeSecondary,
+                            filename: record.imageFileName,
+                            timestamp: dateFormatter.string(from: record.timestamp),
+                            badgeText: "\(Int((record.aiProbability * 100).rounded()))%",
+                            secondaryBadge: record.verdictLabel,
                             showChevron: true
                         )
                     }
                 }
 
-                if viewModel.items.isEmpty {
+                if records.isEmpty {
                     Text("No scans yet")
                         .font(.subheadline)
                         .foregroundStyle(Color.ffTextMuted)
@@ -58,13 +64,22 @@ struct HistoryView: View {
             .padding(.horizontal, 18)
             .padding(.bottom, 20)
         }
-        .onAppear {
-            viewModel.load(using: modelContext)
+    }
+
+    private func clearAll() {
+        do {
+            for record in records {
+                modelContext.delete(record)
+            }
+            try modelContext.save()
+        } catch {
+            print("Failed to clear scan history - \(error.localizedDescription)")
         }
     }
 }
 
 #Preview {
     HistoryView()
+        .modelContainer(for: ScanRecord.self, inMemory: true)
         .background(Color.ffBackground)
 }

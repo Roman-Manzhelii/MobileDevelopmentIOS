@@ -72,7 +72,7 @@ final class AiclipseAPIService {
 
     private enum Constants {
         static let endpoint = URL(string: "https://aiclipse.online/api/v1/checks")!
-        static let apiKey = "ak_db8f8dad-d596-4e27-926c-c5d863901cef.sk_KG_gqm-CH88m6a73AoJhJT9Tgd47bUshJvlPr8ERO_w"
+        static let apiKey = "ak_e2b1c088-602f-4f62-af39-328db521a552.sk_6BPSln22DhUtm8FiH1hQ7Rhs0MmJmoypTFFr5M6-iyo"
     }
 
     private let session: URLSession

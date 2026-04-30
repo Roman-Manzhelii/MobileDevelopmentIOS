@@ -6,15 +6,14 @@
 //
 
 import PhotosUI
+import SwiftData
 import SwiftUI
 import UIKit
-import SwiftData
 
 struct DetectorView: View {
-    
     @Environment(\.modelContext) private var modelContext
 
-        private enum PrimaryAction {
+    private enum PrimaryAction {
         case chooseImage
         case analyze
         case chooseAnotherImage
@@ -225,26 +224,47 @@ struct DetectorView: View {
                 analysisResult = result
             }
 
-            saveScanRecord(fileName: fileName, aiProbability: result.aiProbability, verdictLabel: result.displayLabel)
+            saveScanRecord(
+                fileName: fileName,
+                aiProbability: result.aiProbability,
+                verdictLabel: result.displayLabel
+            )
         } catch {
             guard activeAnalysisID == requestID else { return }
             withAnimation(.spring(response: 0.32, dampingFraction: 0.9)) {
                 analysisError = error.localizedDescription
             }
-            }
-        }
-
-        @MainActor
-        private func saveScanRecord(fileName: String, aiProbability: Double, verdictLabel: String) {
-            let record = ScanRecord(imageFileName: fileName, aiProbability: aiProbability, verdictLabel: verdictLabel)
-            modelContext.insert(record)
-            do {
-                try modelContext.save()
-            } catch {
-                analysisError = "Scan succeeded, but failed to save history: \(error.localizedDescription)"
-            }
         }
     }
+
+    @MainActor
+    private func saveScanRecord(fileName: String, aiProbability: Double, verdictLabel: String) {
+        let record = ScanRecord(
+            imageFileName: fileName,
+            aiProbability: aiProbability,
+            verdictLabel: verdictLabel
+        )
+        modelContext.insert(record)
+
+        do {
+            let descriptor = FetchDescriptor<UserProfile>()
+            let profile: UserProfile
+
+            if let existing = try modelContext.fetch(descriptor).first {
+                profile = existing
+            } else {
+                let created = UserProfile()
+                modelContext.insert(created)
+                profile = created
+            }
+
+            profile.imagesAnalyzed += 1
+            try modelContext.save()
+        } catch {
+            analysisError = "Scan succeeded, but failed to save history: \(error.localizedDescription)"
+        }
+    }
+}
 
 private struct PhotoLibraryPicker: UIViewControllerRepresentable {
     @Binding var isPresented: Bool
@@ -351,5 +371,6 @@ private struct ImagePicker: UIViewControllerRepresentable {
 
 #Preview {
     DetectorView()
+        .modelContainer(for: [ScanRecord.self, UserProfile.self], inMemory: true)
         .background(Color.ffBackground)
 }

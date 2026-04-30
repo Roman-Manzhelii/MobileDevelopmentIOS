@@ -5,7 +5,6 @@ import SwiftData
  * UserProfile model using SwiftData
  * This model is used to store the user's profile data
  */
-
 @Model
 class UserProfile {
     @Attribute(.unique) var id: UUID
@@ -15,7 +14,14 @@ class UserProfile {
     var lastActiveDay: Date
     var imagesAnalyzed: Int
 
-    init(id: UUID = UUID(), seenGameCardIDs: [String] = [], currentStreak: Int = 0, longestStreak: Int = 0, lastActiveDay: Date = .now, imagesAnalyzed: Int = 0) {
+    init(
+        id: UUID = UUID(),
+        seenGameCardIDs: [String] = [],
+        currentStreak: Int = 0,
+        longestStreak: Int = 0,
+        lastActiveDay: Date = .now,
+        imagesAnalyzed: Int = 0
+    ) {
         self.id = id
         self.seenGameCardIDs = seenGameCardIDs
         self.currentStreak = currentStreak
