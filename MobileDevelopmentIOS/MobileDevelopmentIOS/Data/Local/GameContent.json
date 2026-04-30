@@ -1,14 +1,26 @@
 [
-    {
-      "id": "1",
-      "imageName": "Test",
-      "isReal": false,
-      "explanation": "Test"
-    },
-    {
-      "id": "2",
-      "imageName": "Test",
-      "isReal": true,
-      "explanation": "Test"
-    }
-  ]
+  {
+    "id": "game-real-1",
+    "imageName": "gameReal1",
+    "isReal": true,
+    "explanation": "Ground truth: this sample belongs to the real image set."
+  },
+  {
+    "id": "game-fake-1",
+    "imageName": "gameFake1",
+    "isReal": false,
+    "explanation": "Ground truth: this sample belongs to the fake image set."
+  },
+  {
+    "id": "game-real-2",
+    "imageName": "gameReal2",
+    "isReal": true,
+    "explanation": "Ground truth: this sample belongs to the real image set."
+  },
+  {
+    "id": "game-fake-2",
+    "imageName": "gameFake2",
+    "isReal": false,
+    "explanation": "Ground truth: this sample belongs to the fake image set."
+  }
+]
