@@ -44,11 +44,9 @@ struct HistoryView: View {
                 VStack(spacing: 10) {
                     ForEach(records, id: \.id) { record in
                         HistoryRow(
-                            filename: record.imageFileName,
                             timestamp: dateFormatter.string(from: record.timestamp),
-                            badgeText: "\(Int((record.aiProbability * 100).rounded()))%",
-                            secondaryBadge: record.verdictLabel,
-                            showChevron: true
+                            verdict: record.verdictLabel,
+                            imageData: record.imageData
                         )
                     }
                 }

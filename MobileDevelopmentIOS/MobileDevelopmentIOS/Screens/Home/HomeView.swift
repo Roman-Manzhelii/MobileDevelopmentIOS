@@ -56,10 +56,9 @@ struct HomeView: View {
                 VStack(spacing: 10) {
                     ForEach(recentScans, id: \.id) { record in
                         HistoryRow(
-                            filename: record.imageFileName,
                             timestamp: dateFormatter.string(from: record.timestamp),
-                            badgeText: "\(Int((record.aiProbability * 100).rounded()))%",
-                            secondaryBadge: record.verdictLabel
+                            verdict: record.verdictLabel,
+                            imageData: record.imageData
                         )
                     }
                 }

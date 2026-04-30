@@ -8,54 +8,42 @@
 import SwiftUI
 
 struct HistoryRow: View {
-    let filename: String
     let timestamp: String
-    let badgeText: String
-    var secondaryBadge: String? = nil
-    var showChevron: Bool = false
+    let verdict: String
+    var imageData: Data? = nil
 
     var body: some View {
-        HStack(spacing: 10) {
-            RoundedRectangle(cornerRadius: 10)
-                .fill(Color.ffElevated)
-                .frame(width: 44, height: 44)
-                .overlay(
+        VStack(spacing: 10) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.ffElevated)
+
+                if let imageData, let uiImage = UIImage(data: imageData) {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .scaledToFill()
+                } else {
                     Image(systemName: "photo")
+                        .font(.title3)
                         .foregroundStyle(Color.ffTextMuted)
-                )
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 132)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(filename)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Color.ffTextPrimary)
-                    .lineLimit(1)
-
+            HStack(spacing: 10) {
                 Text(timestamp)
                     .font(.caption)
                     .foregroundStyle(Color.ffTextMuted)
                     .lineLimit(1)
-            }
 
-            Spacer(minLength: 8)
+                Spacer(minLength: 8)
 
-            Group {
-                if let secondary = secondaryBadge {
-                    HStack(spacing: 4) {
-                        historyChip(badgeText)
-                        historyChip(secondary)
-                    }
-                } else {
-                    historyChip(badgeText)
-                }
-            }
-
-            if showChevron {
-                Text("›")
-                    .font(.title3.weight(.regular))
-                    .foregroundStyle(Color.ffTextMuted)
+                VerdictChip(verdict: verdict)
             }
         }
-        .padding(10)
+        .padding(12)
         .background(
             RoundedRectangle(cornerRadius: 14)
                 .fill(Color.ffCard)
@@ -66,27 +54,12 @@ struct HistoryRow: View {
         )
     }
 
-    private func historyChip(_ text: String) -> some View {
-        Text(text)
-            .font(.caption2.weight(.bold))
-            .foregroundStyle(Color.ffTextPrimary)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 5)
-            .background(Color.ffElevated, in: Capsule())
-            .overlay(Capsule().strokeBorder(Color.ffBorder, lineWidth: 1))
-    }
 }
 
 #Preview {
     VStack(spacing: 10) {
-        HistoryRow(filename: "Image_001.jpg", timestamp: "Today, 2:14 PM", badgeText: "85% AI")
-        HistoryRow(
-            filename: "Image_012.jpg",
-            timestamp: "Mar 20, 2026 · 2:14 PM",
-            badgeText: "85%",
-            secondaryBadge: "AI",
-            showChevron: true
-        )
+        HistoryRow(timestamp: "Today, 2:14 PM", verdict: "Fake")
+        HistoryRow(timestamp: "Mar 20, 2026 · 2:14 PM", verdict: "Real")
     }
     .padding()
     .background(Color.ffBackground)
