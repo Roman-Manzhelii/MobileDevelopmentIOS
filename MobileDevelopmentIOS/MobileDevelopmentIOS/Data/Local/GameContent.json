@@ -22,5 +22,41 @@
     "imageName": "gameFake2",
     "isReal": false,
     "explanation": "Ground truth: this sample belongs to the fake image set."
+  },
+  {
+    "id": "game-real-3",
+    "imageName": "gameReal3",
+    "isReal": true,
+    "explanation": "Ground truth: this sample belongs to the real image set."
+  },
+  {
+    "id": "game-fake-3",
+    "imageName": "gameFake3",
+    "isReal": false,
+    "explanation": "Ground truth: this sample belongs to the fake image set."
+  },
+  {
+    "id": "game-real-4",
+    "imageName": "gameReal4",
+    "isReal": true,
+    "explanation": "Ground truth: this sample belongs to the real image set."
+  },
+  {
+    "id": "game-fake-4",
+    "imageName": "gameFake4",
+    "isReal": false,
+    "explanation": "Ground truth: this sample belongs to the fake image set."
+  },
+  {
+    "id": "game-real-5",
+    "imageName": "gameReal5",
+    "isReal": true,
+    "explanation": "Ground truth: this sample belongs to the real image set."
+  },
+  {
+    "id": "game-fake-5",
+    "imageName": "gameFake5",
+    "isReal": false,
+    "explanation": "Ground truth: this sample belongs to the fake image set."
   }
 ]
