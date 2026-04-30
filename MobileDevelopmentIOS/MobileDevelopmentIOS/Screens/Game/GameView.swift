@@ -43,15 +43,9 @@ struct GameView: View {
 
     private var header: some View {
         HStack(alignment: .top, spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Spot the Fake")
-                    .font(.title2.weight(.bold))
-                    .foregroundStyle(Color.ffTextPrimary)
-
-                Text(roundFinished ? "Round complete. You can reshuffle and play again." : "Swipe left if the image looks fake, or right if it looks real.")
-                    .font(.subheadline)
-                    .foregroundStyle(Color.ffTextMuted)
-            }
+            Text("Spot the Fake")
+                .font(.title2.weight(.bold))
+                .foregroundStyle(Color.ffTextPrimary)
 
             Spacer(minLength: 0)
 
@@ -392,7 +386,7 @@ private struct GameSwipeStackView: UIViewRepresentable {
         }
 
         func cardStack(_ cardStack: SwipeCardStack, cardForIndexAt index: Int) -> SwipeCard {
-            makeCard(from: parent.cards[index], index: index)
+            makeCard(from: parent.cards[index])
         }
 
         func cardStack(_ cardStack: SwipeCardStack, didSwipeCardAt index: Int, with direction: SwipeDirection) {
@@ -403,10 +397,10 @@ private struct GameSwipeStackView: UIViewRepresentable {
             parent.onFinished()
         }
 
-        private func makeCard(from model: GameCardData, index: Int) -> SwipeCard {
+        private func makeCard(from model: GameCardData) -> SwipeCard {
             let card = SwipeCard()
             card.swipeDirections = [.left, .right]
-            card.content = makeCardContent(from: model, index: index)
+            card.content = makeCardContent(from: model)
 
             card.setOverlays([
                 .left: makeOverlay(text: "FAKE", color: UIColor(Color.ffRed), alignment: .left),
@@ -416,7 +410,7 @@ private struct GameSwipeStackView: UIViewRepresentable {
             return card
         }
 
-        private func makeCardContent(from model: GameCardData, index: Int) -> UIView {
+        private func makeCardContent(from model: GameCardData) -> UIView {
             let root = UIView()
             root.backgroundColor = UIColor(Color.ffCard)
             root.layer.cornerRadius = 28
@@ -424,95 +418,21 @@ private struct GameSwipeStackView: UIViewRepresentable {
             root.layer.borderColor = UIColor(Color.ffBorder).cgColor
             root.layer.masksToBounds = true
 
-            let badge = PaddingLabel()
-            badge.text = "CARD \(index + 1)"
-            badge.textColor = UIColor(Color.ffGold)
-            badge.font = .systemFont(ofSize: 12, weight: .bold)
-            badge.backgroundColor = UIColor(Color.ffGold).withAlphaComponent(0.14)
-            badge.layer.cornerRadius = 12
-            badge.layer.masksToBounds = true
-            badge.edgeInsets = UIEdgeInsets(top: 6, left: 10, bottom: 6, right: 10)
-            badge.translatesAutoresizingMaskIntoConstraints = false
-
-            let titleLabel = UILabel()
-            titleLabel.text = "Real or fake?"
-            titleLabel.font = .systemFont(ofSize: 30, weight: .bold)
-            titleLabel.textColor = UIColor(Color.ffTextPrimary)
-            titleLabel.numberOfLines = 0
-            titleLabel.translatesAutoresizingMaskIntoConstraints = false
-
-            let subtitleLabel = UILabel()
-            subtitleLabel.text = "Look at the image, trust your eye, then swipe."
-            subtitleLabel.font = .systemFont(ofSize: 16, weight: .medium)
-            subtitleLabel.textColor = UIColor(Color.ffTextMuted)
-            subtitleLabel.numberOfLines = 0
-            subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
-
-            let imageContainer = UIView()
-            imageContainer.backgroundColor = UIColor(Color.ffBackground)
-            imageContainer.layer.cornerRadius = 22
-            imageContainer.layer.masksToBounds = true
-            imageContainer.translatesAutoresizingMaskIntoConstraints = false
-
             let image = UIImage(named: model.imageName) ?? UIImage(systemName: "photo")
             let imageView = UIImageView(image: image)
             imageView.contentMode = .scaleAspectFit
             imageView.tintColor = UIColor(Color.ffTextMuted)
+            imageView.layer.cornerRadius = 16
+            imageView.layer.masksToBounds = true
             imageView.translatesAutoresizingMaskIntoConstraints = false
 
-            let footerView = UIView()
-            footerView.backgroundColor = UIColor(Color.ffElevated)
-            footerView.layer.cornerRadius = 18
-            footerView.layer.masksToBounds = true
-            footerView.translatesAutoresizingMaskIntoConstraints = false
-
-            let footerLabel = UILabel()
-            footerLabel.text = "Left = Fake   |   Right = Real"
-            footerLabel.font = .systemFont(ofSize: 14, weight: .semibold)
-            footerLabel.textColor = UIColor(Color.ffTextPrimary)
-            footerLabel.textAlignment = .center
-            footerLabel.translatesAutoresizingMaskIntoConstraints = false
-
-            root.addSubview(badge)
-            root.addSubview(titleLabel)
-            root.addSubview(subtitleLabel)
-            root.addSubview(imageContainer)
-            root.addSubview(footerView)
-
-            imageContainer.addSubview(imageView)
-            footerView.addSubview(footerLabel)
+            root.addSubview(imageView)
 
             NSLayoutConstraint.activate([
-                badge.topAnchor.constraint(equalTo: root.topAnchor, constant: 20),
-                badge.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 20),
-
-                titleLabel.topAnchor.constraint(equalTo: badge.bottomAnchor, constant: 16),
-                titleLabel.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 20),
-                titleLabel.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -20),
-
-                subtitleLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 8),
-                subtitleLabel.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 20),
-                subtitleLabel.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -20),
-
-                imageContainer.topAnchor.constraint(equalTo: subtitleLabel.bottomAnchor, constant: 18),
-                imageContainer.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 20),
-                imageContainer.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -20),
-                imageContainer.heightAnchor.constraint(equalTo: root.heightAnchor, multiplier: 0.56),
-
-                imageView.topAnchor.constraint(equalTo: imageContainer.topAnchor, constant: 14),
-                imageView.bottomAnchor.constraint(equalTo: imageContainer.bottomAnchor, constant: -14),
-                imageView.leadingAnchor.constraint(equalTo: imageContainer.leadingAnchor, constant: 14),
-                imageView.trailingAnchor.constraint(equalTo: imageContainer.trailingAnchor, constant: -14),
-
-                footerView.topAnchor.constraint(equalTo: imageContainer.bottomAnchor, constant: 16),
-                footerView.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 20),
-                footerView.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -20),
-                footerView.bottomAnchor.constraint(lessThanOrEqualTo: root.bottomAnchor, constant: -20),
-
-                footerLabel.topAnchor.constraint(equalTo: footerView.topAnchor, constant: 12),
-                footerLabel.bottomAnchor.constraint(equalTo: footerView.bottomAnchor, constant: -12),
-                footerLabel.leadingAnchor.constraint(equalTo: footerView.leadingAnchor, constant: 12),
-                footerLabel.trailingAnchor.constraint(equalTo: footerView.trailingAnchor, constant: -12)
+                imageView.topAnchor.constraint(equalTo: root.topAnchor, constant: 14),
+                imageView.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -14),
+                imageView.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 14),
+                imageView.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -14)
             ])
 
             return root
@@ -566,32 +486,5 @@ private struct GameSwipeStackView: UIViewRepresentable {
 
             return overlay
         }
-    }
-}
-
-private final class PaddingLabel: UILabel {
-    var edgeInsets = UIEdgeInsets.zero
-
-    override func textRect(forBounds bounds: CGRect, limitedToNumberOfLines numberOfLines: Int) -> CGRect {
-        let insetBounds = bounds.inset(by: edgeInsets)
-        let textRect = super.textRect(forBounds: insetBounds, limitedToNumberOfLines: numberOfLines)
-        return CGRect(
-            x: textRect.origin.x - edgeInsets.left,
-            y: textRect.origin.y - edgeInsets.top,
-            width: textRect.width + edgeInsets.left + edgeInsets.right,
-            height: textRect.height + edgeInsets.top + edgeInsets.bottom
-        )
-    }
-
-    override func drawText(in rect: CGRect) {
-        super.drawText(in: rect.inset(by: edgeInsets))
-    }
-
-    override var intrinsicContentSize: CGSize {
-        let size = super.intrinsicContentSize
-        return CGSize(
-            width: size.width + edgeInsets.left + edgeInsets.right,
-            height: size.height + edgeInsets.top + edgeInsets.bottom
-        )
     }
 }
