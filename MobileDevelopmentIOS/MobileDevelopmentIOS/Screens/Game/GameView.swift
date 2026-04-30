@@ -128,12 +128,12 @@ struct GameView: View {
 
     private var completedState: some View {
         VStack(spacing: 14) {
-            VStack(alignment: .leading, spacing: 10) {
-                Text("That was the full deck.")
+            VStack(alignment: .center, spacing: 10) {
+                Text("That was the full deck")
                     .font(.title3.weight(.bold))
                     .foregroundStyle(Color.ffTextPrimary)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: .center)
             .padding(18)
             .background(
                 RoundedRectangle(cornerRadius: 20, style: .continuous)
