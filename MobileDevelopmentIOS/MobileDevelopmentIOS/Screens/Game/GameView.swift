@@ -181,6 +181,10 @@ struct GameView: View {
         return "\(min(answeredCount, roundCards.count))/\(roundCards.count)"
     }
 
+    private var isHapticsEnabled: Bool {
+        profiles.first?.hapticsEnabled ?? true
+    }
+
     private func getUnseenCards() -> [GameCardData] {
         guard let userProfile = profiles.first else { return gameManager.cards }
         let unseenCards = gameManager.cards.filter { !userProfile.seenGameCardIDs.contains($0.id) }
@@ -228,7 +232,7 @@ struct GameView: View {
             feedbackDismissID = dismissID
         }
 
-        triggerHaptic(isCorrect: isCorrect)
+        triggerHapticIfNeeded(isCorrect: isCorrect)
         scheduleFeedbackDismissal(for: dismissID)
     }
 
@@ -256,9 +260,11 @@ struct GameView: View {
         }
     }
 
-    private func triggerHaptic(isCorrect: Bool) {
+    private func triggerHapticIfNeeded(isCorrect: Bool) {
+        guard !isCorrect, isHapticsEnabled else { return }
+
         let generator = UINotificationFeedbackGenerator()
-        generator.notificationOccurred(isCorrect ? .success : .error)
+        generator.notificationOccurred(.error)
     }
 }
 

@@ -5,13 +5,17 @@
 //  Created by Student on 23/03/2026.
 //
 
+import SwiftData
 import SwiftUI
 
 struct ProfileView: View {
+    @Environment(\.modelContext) private var context
+    @Query private var profiles: [UserProfile]
+
     private let metrics: [MetricItem] = [
         MetricItem(value: "47", label: "Images Analyzed"),
         MetricItem(value: "132", label: "Cards Swiped"),
-        MetricItem(value: "5🔥", label: "Day Streak"),
+        MetricItem(value: "5", label: "Day Streak"),
         MetricItem(value: "72%", label: "Accuracy"),
         MetricItem(value: "95", label: "Correct Swipes"),
         MetricItem(value: "37", label: "Wrong Swipes")
@@ -24,7 +28,7 @@ struct ProfileView: View {
                     Text("Profile & Stats")
                         .font(.title2.weight(.bold))
                         .foregroundStyle(Color.ffTextPrimary)
-                    Text("Screen 5 — Gamification & Settings")
+                    Text("Game settings and progress")
                         .font(.caption)
                         .foregroundStyle(Color.ffTextMuted)
                 }
@@ -46,7 +50,10 @@ struct ProfileView: View {
                 SectionLabel(title: "Metrics")
                 MetricsGrid(items: metrics)
 
-                Text("● All metrics from SwiftData GameSession + ScanRecord")
+                SectionLabel(title: "Settings")
+                hapticsButton
+
+                Text("All metrics come from SwiftData models.")
                     .font(.caption2)
                     .foregroundStyle(Color.ffTextMuted)
             }
@@ -55,14 +62,19 @@ struct ProfileView: View {
         }
     }
 
+    private var hapticsEnabled: Bool {
+        profiles.first?.hapticsEnabled ?? true
+    }
+
     private var userRow: some View {
         HStack(alignment: .center, spacing: 14) {
             RoundedRectangle(cornerRadius: 12)
                 .fill(Color.ffElevated)
                 .frame(width: 62, height: 62)
                 .overlay(
-                    Text("👤")
-                        .font(.title)
+                    Image(systemName: "person.fill")
+                        .font(.title2)
+                        .foregroundStyle(Color.ffTextPrimary)
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
@@ -93,9 +105,58 @@ struct ProfileView: View {
                 )
         )
     }
+
+    private var hapticsButton: some View {
+        Button(action: toggleHaptics) {
+            HStack(spacing: 14) {
+                Image(systemName: hapticsEnabled ? "iphone.radiowaves.left.and.right" : "iphone.slash")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(hapticsEnabled ? Color.ffGold : Color.ffTextMuted)
+                    .frame(width: 44, height: 44)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(Color.ffElevated)
+                    )
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Haptics")
+                        .font(.headline.weight(.semibold))
+                        .foregroundStyle(Color.ffTextPrimary)
+
+                    Text(hapticsEnabled ? "On for wrong guesses" : "Off")
+                        .font(.caption)
+                        .foregroundStyle(Color.ffTextMuted)
+                }
+
+                Spacer(minLength: 0)
+
+                Badge(text: hapticsEnabled ? "On" : "Off")
+            }
+            .padding(14)
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(Color.ffCard)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14)
+                            .strokeBorder(Color.ffBorder, lineWidth: 1)
+                    )
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func toggleHaptics() {
+        if let profile = profiles.first {
+            profile.hapticsEnabled.toggle()
+            return
+        }
+
+        context.insert(UserProfile(hapticsEnabled: false))
+    }
 }
 
 #Preview {
     ProfileView()
+        .modelContainer(for: UserProfile.self, inMemory: true)
         .background(Color.ffBackground)
 }

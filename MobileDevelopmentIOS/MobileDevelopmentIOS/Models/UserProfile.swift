@@ -9,9 +9,15 @@ import SwiftData
 class UserProfile {
     @Attribute(.unique) var id: UUID
     var seenGameCardIDs: [String]
-    
-    init(id: UUID = UUID(), seenGameCardIDs: [String] = []) {
+    var hapticsEnabled: Bool
+
+    init(
+        id: UUID = UUID(),
+        seenGameCardIDs: [String] = [],
+        hapticsEnabled: Bool = true
+    ) {
         self.id = id
         self.seenGameCardIDs = seenGameCardIDs
+        self.hapticsEnabled = hapticsEnabled
     }
 }

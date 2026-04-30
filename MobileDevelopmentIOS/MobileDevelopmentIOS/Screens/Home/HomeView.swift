@@ -38,7 +38,9 @@ struct HomeView: View {
                     QuickActionCard(systemImage: "camera.viewfinder", title: "Detector") {
                         selectedTab = .detector
                     }
-                    QuickActionCard(systemImage: "rectangle.stack.fill.badge.play", title: "Swiper") {}
+                    QuickActionCard(systemImage: "gamecontroller.fill", title: "Play Game") {
+                        selectedTab = .game
+                    }
                 }
 
                 SectionLabel(title: "At-a-Glance Stats")
