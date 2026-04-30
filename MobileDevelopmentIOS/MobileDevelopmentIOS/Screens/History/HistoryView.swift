@@ -5,23 +5,18 @@
 //  Created by Student on 23/03/2026.
 //
 
+import SwiftData
 import SwiftUI
 
 struct HistoryView: View {
-    private struct ScanItem: Identifiable {
-        let id = UUID()
-        let filename: String
-        let timestamp: String
-        let badgePrimary: String
-        let badgeSecondary: String?
-    }
+    @Environment(\.modelContext) private var modelContext
+    @Query(sort: \ScanRecord.timestamp, order: .reverse) private var records: [ScanRecord]
 
-    @State private var items: [ScanItem] = [
-        ScanItem(filename: "Image_012.jpg", timestamp: "Mar 20, 2026 · 2:14 PM", badgePrimary: "85%", badgeSecondary: "AI"),
-        ScanItem(filename: "Image_011.jpg", timestamp: "Mar 20, 2026 · 11:03 AM", badgePrimary: "12%", badgeSecondary: "Real"),
-        ScanItem(filename: "Image_010.jpg", timestamp: "Mar 19, 2026 · 7:45 PM", badgePrimary: "63%", badgeSecondary: "AI"),
-        ScanItem(filename: "Image_009.jpg", timestamp: "Mar 19, 2026 · 4:22 PM", badgePrimary: "91%", badgeSecondary: "AI")
-    ]
+    private let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d, yyyy · h:mm a"
+        return formatter
+    }()
 
     var body: some View {
         ScrollView {
@@ -37,7 +32,7 @@ struct HistoryView: View {
                     }
                     Spacer(minLength: 12)
                     OutlineButton(title: "Clear All") {
-                        items.removeAll()
+                        clearAll()
                     }
                 }
                 .padding(.top, 8)
@@ -46,23 +41,19 @@ struct HistoryView: View {
                     .fill(Color.ffBorder)
                     .frame(height: 1)
 
-                Text("● Fetched from SwiftData ScanRecord — chronological list")
-                    .font(.caption2)
-                    .foregroundStyle(Color.ffTextMuted)
-
                 VStack(spacing: 10) {
-                    ForEach(items) { item in
+                    ForEach(records, id: \.id) { record in
                         HistoryRow(
-                            filename: item.filename,
-                            timestamp: item.timestamp,
-                            badgeText: item.badgePrimary,
-                            secondaryBadge: item.badgeSecondary,
+                            filename: record.imageFileName,
+                            timestamp: dateFormatter.string(from: record.timestamp),
+                            badgeText: "\(Int((record.aiProbability * 100).rounded()))%",
+                            secondaryBadge: record.verdictLabel,
                             showChevron: true
                         )
                     }
                 }
 
-                if items.isEmpty {
+                if records.isEmpty {
                     Text("No scans yet")
                         .font(.subheadline)
                         .foregroundStyle(Color.ffTextMuted)
@@ -74,9 +65,21 @@ struct HistoryView: View {
             .padding(.bottom, 20)
         }
     }
+
+    private func clearAll() {
+        do {
+            for record in records {
+                modelContext.delete(record)
+            }
+            try modelContext.save()
+        } catch {
+            print("Failed to clear scan history - \(error.localizedDescription)")
+        }
+    }
 }
 
 #Preview {
     HistoryView()
+        .modelContainer(for: ScanRecord.self, inMemory: true)
         .background(Color.ffBackground)
 }
