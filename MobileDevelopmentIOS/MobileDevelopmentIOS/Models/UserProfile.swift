@@ -9,14 +9,16 @@ import SwiftData
 @Model
 class UserProfile {
     @Attribute(.unique) var id: UUID
+    var displayName: String
     var seenGameCardIDs: [String]
     var currentStreak: Int
     var longestStreak: Int
     var lastActiveDay: Date
     var imagesAnalyzed: Int
 
-    init(id: UUID = UUID(), seenGameCardIDs: [String] = [], currentStreak: Int = 0, longestStreak: Int = 0, lastActiveDay: Date = .now, imagesAnalyzed: Int = 0) {
+    init(id: UUID = UUID(), displayName: String = "User", seenGameCardIDs: [String] = [], currentStreak: Int = 0, longestStreak: Int = 0, lastActiveDay: Date = .now, imagesAnalyzed: Int = 0) {
         self.id = id
+        self.displayName = displayName
         self.seenGameCardIDs = seenGameCardIDs
         self.currentStreak = currentStreak
         self.longestStreak = longestStreak

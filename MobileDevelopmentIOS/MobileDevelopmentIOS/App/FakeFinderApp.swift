@@ -10,6 +10,7 @@ import SwiftData
 
 @main
 struct FakeFinderApp: App {
+    @AppStorage("activeUserID") private var activeUserID = ""
 
     private let modelContainer: ModelContainer
     init() {
@@ -27,8 +28,12 @@ struct FakeFinderApp: App {
         }
     }
     var body: some Scene {
-        WindowGroup {   
-            MainView()
+        WindowGroup {
+            if activeUserID.isEmpty {
+                StartupUserView()
+            } else {
+                MainView()
+            }
         }
         .modelContainer(modelContainer)
     }

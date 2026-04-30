@@ -14,30 +14,30 @@ final class HomeManager: ObservableObject {
 
     @Published private(set) var recentActivity: [RecentScanItem] = []
 
-    let stats: [StatItem] = [
-        StatItem(value: "12", label: "Scans this week"),
-        StatItem(value: "74%", label: "Game accuracy"),
-        StatItem(value: "3🔥", label: "Day streak")
-    ]
-
     private let dateFormatter: DateFormatter = {
         let f = DateFormatter()
         f.dateFormat = "MMM d, yyyy · h:mm a"
         return f
     }()
 
-    func recordDailyActivity(using modelContext: ModelContext, now: Date = .now) {
+    func recordDailyActivity(using modelContext: ModelContext, activeUserID: String = "", now: Date = .now) {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: now)
 
         do {
             let descriptor = FetchDescriptor<UserProfile>()
+            let allProfiles = try modelContext.fetch(descriptor)
             let profile: UserProfile
+            let selectedUUID = UUID(uuidString: activeUserID)
 
-            if let existing = try modelContext.fetch(descriptor).first {
+            if let selectedUUID,
+               let selectedProfile = allProfiles.first(where: { $0.id == selectedUUID }) {
+                profile = selectedProfile
+            } else if let existing = allProfiles.first {
                 profile = existing
             } else {
                 let created = UserProfile(
+                    displayName: "User",
                     currentStreak: 1,
                     longestStreak: 1,
                     lastActiveDay: today
@@ -90,4 +90,5 @@ final class HomeManager: ObservableObject {
             print("Failed loading home recent activity- \(error.localizedDescription)")
         }
     }
+
 }

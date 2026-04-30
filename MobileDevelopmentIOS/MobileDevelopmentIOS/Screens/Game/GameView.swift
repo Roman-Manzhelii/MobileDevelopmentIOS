@@ -9,6 +9,7 @@ import SwiftData
 import Shuffle
 
 struct GameView: View {
+    @AppStorage("activeUserID") private var activeUserID = ""
     @Environment(\.modelContext) private var context
     @Query private var profiles: [UserProfile]
     
@@ -22,7 +23,9 @@ struct GameView: View {
     
     // Get the unseen cards. Don't show the cards that the user has already seen.
     private func getUnseenCards() -> [GameCardData] {
-        guard let userProfile = profiles.first else { return gameManager.cards }
+        let selectedUUID = UUID(uuidString: activeUserID)
+        let userProfile = profiles.first(where: { $0.id == selectedUUID }) ?? profiles.first
+        guard let userProfile else { return gameManager.cards }
         return gameManager.cards.filter { !userProfile.seenGameCardIDs.contains($0.id) }
     }
 }

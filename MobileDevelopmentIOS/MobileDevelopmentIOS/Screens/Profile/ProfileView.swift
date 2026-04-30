@@ -9,20 +9,38 @@ import SwiftUI
 import SwiftData
 
 struct ProfileView: View {
+    @AppStorage("activeUserID") private var activeUserID = ""
+    @Environment(\.modelContext) private var modelContext
     @Query private var profiles: [UserProfile]
+    @StateObject private var statsManager = StatsManager()
 
     private var profile: UserProfile? {
-        profiles.first
+        let selectedUUID = UUID(uuidString: activeUserID)
+        return profiles.first(where: { $0.id == selectedUUID }) ?? profiles.first
+    }
+
+    private var accuracyPercentText: String {
+        "\(Int((statsManager.accuracyProgress * 100).rounded()))%"
+    }
+
+    private var displayName: String {
+        guard let profile else { return "User" }
+        return profile.displayName
+    }
+
+    private var levelText: String {
+        let level = max(1, ((profile?.imagesAnalyzed ?? 0) / 25) + 1)
+        return "\(level)"
     }
 
     private var metrics: [MetricItem] {
         [
             MetricItem(value: "\(profile?.imagesAnalyzed ?? 0)", label: "Images Analyzed"),
-            MetricItem(value: "132", label: "Cards Swiped"),
-            MetricItem(value: "\(profile?.currentStreak ?? 0)🔥", label: "Day Streak"),
-            MetricItem(value: "72%", label: "Accuracy"),
-            MetricItem(value: "95", label: "Correct Swipes"),
-            MetricItem(value: "37", label: "Wrong Swipes")
+            MetricItem(value: "\(statsManager.scansCount)", label: "Cards Swiped"),
+            MetricItem(value: "\(statsManager.dayStreak)🔥", label: "Day Streak"),
+            MetricItem(value: accuracyPercentText, label: "Accuracy"),
+            MetricItem(value: "\(statsManager.correctSwipes)", label: "Correct Swipes"),
+            MetricItem(value: "\(statsManager.wrongSwipes)", label: "Wrong Swipes")
         ]
     }
 
@@ -41,19 +59,38 @@ struct ProfileView: View {
                     .frame(height: 1)
 
                 userRow
+                Button("Change User") {
+                    activeUserID = ""
+                }
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(Color.ffTextPrimary)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 10)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.ffCard)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .strokeBorder(Color.ffBorder, lineWidth: 1)
+                        )
+                )
+                .buttonStyle(.plain)
 
                 Rectangle()
                     .fill(Color.ffBorder)
                     .frame(height: 1)
 
                 SectionLabel(title: "Overall Game Accuracy")
-                AccuracyRing(progress: 0.72)
+                AccuracyRing(progress: statsManager.accuracyProgress)
 
                 SectionLabel(title: "Metrics")
                 MetricsGrid(items: metrics)
             }
             .padding(.horizontal, 18)
             .padding(.bottom, 20)
+        }
+        .onAppear {
+            statsManager.refreshStats(using: modelContext, activeUserID: activeUserID)
         }
     }
 
@@ -72,10 +109,10 @@ struct ProfileView: View {
                 )
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 8) {
-                    Text("User Name")
+                    Text(displayName)
                         .font(.headline.weight(.semibold))
                         .foregroundStyle(Color.ffTextPrimary)
-                    Badge(text: "1")
+                    Badge(text: levelText)
                 }
             }
 
