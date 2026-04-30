@@ -10,7 +10,7 @@ import SwiftUI
 struct HomeView: View {
     @Binding var selectedTab: FFTab
 
-    @AppStorage("activeUserID") private var activeUserID = ""
+    @EnvironmentObject private var activeUserManager: ActiveUserManager
     @Environment(\.modelContext) private var modelContext
     @StateObject private var homeManager = HomeManager()
     @StateObject private var statsManager = StatsManager()
@@ -55,8 +55,8 @@ struct HomeView: View {
             .padding(.bottom, 20)
         }
         .onAppear {
-            homeManager.recordDailyActivity(using: modelContext, activeUserID: activeUserID)
-            statsManager.refreshStats(using: modelContext, activeUserID: activeUserID)
+            homeManager.recordDailyActivity(using: modelContext, activeUserID: activeUserManager.activeUserID)
+            statsManager.refreshStats(using: modelContext, activeUserID: activeUserManager.activeUserID)
             homeManager.loadRecent(using: modelContext, limit: 2)
         }
     }
@@ -64,5 +64,6 @@ struct HomeView: View {
 
 #Preview {
     HomeView(selectedTab: .constant(.home))
+        .environmentObject(ActiveUserManager())
         .background(Color.ffBackground)
 }

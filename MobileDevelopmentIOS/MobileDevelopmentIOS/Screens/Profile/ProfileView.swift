@@ -9,14 +9,12 @@ import SwiftUI
 import SwiftData
 
 struct ProfileView: View {
-    @AppStorage("activeUserID") private var activeUserID = ""
+    @EnvironmentObject private var activeUserManager: ActiveUserManager
     @Environment(\.modelContext) private var modelContext
-    @Query private var profiles: [UserProfile]
     @StateObject private var statsManager = StatsManager()
 
     private var profile: UserProfile? {
-        let selectedUUID = UUID(uuidString: activeUserID)
-        return profiles.first(where: { $0.id == selectedUUID }) ?? profiles.first
+        activeUserManager.selectedProfile(using: modelContext)
     }
 
     private var accuracyPercentText: String {
@@ -60,7 +58,7 @@ struct ProfileView: View {
 
                 userRow
                 Button("Change User") {
-                    activeUserID = ""
+                    activeUserManager.clearActiveUser()
                 }
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(Color.ffTextPrimary)
@@ -90,7 +88,7 @@ struct ProfileView: View {
             .padding(.bottom, 20)
         }
         .onAppear {
-            statsManager.refreshStats(using: modelContext, activeUserID: activeUserID)
+            statsManager.refreshStats(using: modelContext, activeUserID: activeUserManager.activeUserID)
         }
     }
 
@@ -132,5 +130,6 @@ struct ProfileView: View {
 
 #Preview {
     ProfileView()
+        .environmentObject(ActiveUserManager())
         .background(Color.ffBackground)
 }

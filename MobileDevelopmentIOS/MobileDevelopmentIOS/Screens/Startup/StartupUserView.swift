@@ -3,10 +3,11 @@ import SwiftData
 
 struct StartupUserView: View {
     @Environment(\.modelContext) private var modelContext
+    @EnvironmentObject private var activeUserManager: ActiveUserManager
     @Query(sort: \UserProfile.displayName) private var profiles: [UserProfile]
-    @AppStorage("activeUserID") private var activeUserID = ""
 
     @State private var newUserName = ""
+    @State private var createUserError = ""
 
     var body: some View {
         ZStack {
@@ -41,7 +42,7 @@ struct StartupUserView: View {
                         VStack(spacing: 10) {
                             ForEach(profiles) { profile in
                                 Button {
-                                    activeUserID = profile.id.uuidString
+                                    activeUserManager.selectUser(profile)
                                 } label: {
                                     HStack {
                                         Text(profile.displayName)
@@ -103,6 +104,12 @@ struct StartupUserView: View {
                                 )
                         )
                         .buttonStyle(.plain)
+
+                        if !createUserError.isEmpty {
+                            Text(createUserError)
+                                .font(.caption)
+                                .foregroundStyle(.red)
+                        }
                     }
                 }
                 .padding(.horizontal, 18)
@@ -129,16 +136,21 @@ struct StartupUserView: View {
 
     private func createUser() {
         let trimmedName = newUserName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedName.isEmpty else { return }
+        guard !trimmedName.isEmpty else {
+            createUserError = "Please enter a user name."
+            return
+        }
 
         let profile = UserProfile(displayName: trimmedName)
         modelContext.insert(profile)
 
         do {
             try modelContext.save()
-            activeUserID = profile.id.uuidString
+            activeUserManager.selectUser(profile)
             newUserName = ""
+            createUserError = ""
         } catch {
+            createUserError = "Could not create user. Please try again."
             print("Failed to create user- \(error.localizedDescription)")
         }
     }
@@ -146,5 +158,6 @@ struct StartupUserView: View {
 
 #Preview {
     StartupUserView()
+        .environmentObject(ActiveUserManager())
         .background(Color.ffBackground)
 }
