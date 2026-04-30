@@ -132,10 +132,6 @@ struct GameView: View {
                 Text("That was the full deck.")
                     .font(.title3.weight(.bold))
                     .foregroundStyle(Color.ffTextPrimary)
-
-                Text("For this prototype round we keep it simple: four cards, instant feedback, then a reshuffle.")
-                    .font(.subheadline)
-                    .foregroundStyle(Color.ffTextMuted)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(18)
