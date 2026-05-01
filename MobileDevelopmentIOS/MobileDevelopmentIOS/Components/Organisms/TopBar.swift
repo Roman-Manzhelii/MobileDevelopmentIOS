@@ -10,13 +10,8 @@ struct TopBar : View {
     var body : some View {
         VStack(spacing:20){
             HStack {
-                Image("Burger")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(height: 16)
                 Spacer()
                 Image("FakeFinder").resizable().scaledToFit().frame(height:22)
-                    .padding(.trailing, 32)
                 Spacer()
             }
             .padding()

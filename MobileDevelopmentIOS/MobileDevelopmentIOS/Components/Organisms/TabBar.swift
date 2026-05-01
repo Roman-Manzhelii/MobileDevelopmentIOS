@@ -23,24 +23,23 @@ struct TabBar : View {
             Rectangle()
                 .fill(Color.ffBorder)
                 .frame(height: 0.5)
-            HStack {
+            HStack(spacing: 0) {
                 ForEach([FFTab.home, .detector, .game, .history, .profile], id: \.self) { tab in
                     Button(action: { selectedTab = tab }) {
                         VStack(spacing: 4) {
-                            Spacer()
                             ZStack {
                                 getIcon(for: tab)
                                     .resizable()
                                     .renderingMode(.template)
                                     .scaledToFit()
-                                    .frame(height: tab == .history ? 20 : 25)
-                            }.frame(height: 25)
+                                    .frame(width: 25, height: 25)
+                            }.frame(width: 25, height: 25)
                             
                             Text(label(for: tab))
                                 .font(.caption2)
                         }
                         .foregroundColor(selectedTab == tab ? .ffGold : .ffTextMuted)
-                        .frame(maxWidth: .infinity, maxHeight:20)
+                        .frame(maxWidth: .infinity)
                     }
                 }
             }
@@ -59,9 +58,9 @@ func label(for tab: FFTab) -> String {
 func getIcon(for tab: FFTab) -> Image {
     switch tab {
         case .home: return Image(.home)
-    case .detector: return Image(.detector)
+    case .detector: return Image(systemName: "camera.viewfinder")
     case .game: return Image(.play)
-    case .history: return Image(.burger)
+    case .history: return Image(systemName: "clock.arrow.circlepath")
         case .profile: return Image(.profile)
     }
 }
