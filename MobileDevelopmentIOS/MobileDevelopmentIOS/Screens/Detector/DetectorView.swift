@@ -82,12 +82,10 @@ struct DetectorView: View {
 
     private var detectorContent: some View {
         VStack(alignment: .leading, spacing: 14) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("AI Detector")
-                    .font(.title2.weight(.bold))
-                    .foregroundStyle(Color.ffTextPrimary)
-            }
-            .padding(.top, 8)
+            ScreenHeader(
+                title: "AI Detector",
+                subtitle: "Upload or capture an image to check it"
+            )
 
             Rectangle()
                 .fill(Color.ffBorder)

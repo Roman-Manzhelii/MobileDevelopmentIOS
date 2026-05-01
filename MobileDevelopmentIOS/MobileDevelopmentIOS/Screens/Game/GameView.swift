@@ -47,13 +47,10 @@ struct GameView: View {
     }
 
     private var header: some View {
-        HStack(alignment: .top, spacing: 12) {
-            Text("Spot the Fake")
-                .font(.title2.weight(.bold))
-                .foregroundStyle(Color.ffTextPrimary)
-
-            Spacer(minLength: 0)
-
+        ScreenHeader(
+            title: "Spot the Fake",
+            subtitle: "Swipe through images and test your eye"
+        ) {
             Text(progressLabel)
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(Color.ffGold)
@@ -68,7 +65,6 @@ struct GameView: View {
                         .stroke(Color.ffBorder, lineWidth: 1)
                 )
         }
-        .padding(.top, 8)
     }
 
     private var instructionRow: some View {
