@@ -59,7 +59,7 @@ func label(for tab: FFTab) -> String {
 func getIcon(for tab: FFTab) -> Image {
     switch tab {
         case .home: return Image(.home)
-    case .detector: return Image(.detector)
+    case .detector: return Image(systemName: "camera.viewfinder")
     case .game: return Image(.play)
     case .history: return Image(.burger)
         case .profile: return Image(.profile)
