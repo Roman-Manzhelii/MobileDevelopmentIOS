@@ -26,6 +26,10 @@ struct GameView: View {
     @State private var lastResult: GuessFeedback?
     @State private var deckID = UUID()
     @State private var feedbackDismissID = UUID()
+    @State private var swipeHintRequestID = UUID()
+    @State private var swipeHintCancellationID = UUID()
+    @State private var swipeHintScheduleID = UUID()
+    @State private var swipeHintWorkItem: DispatchWorkItem?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -45,7 +49,12 @@ struct GameView: View {
         .onAppear {
             if roundCards.isEmpty {
                 startRound()
+            } else {
+                scheduleSwipeHint(after: 2)
             }
+        }
+        .onDisappear {
+            cancelSwipeHints()
         }
     }
 
@@ -120,8 +129,11 @@ struct GameView: View {
         GameSwipeStackView(
             cards: roundCards,
             deckID: deckID,
+            hintRequestID: swipeHintRequestID,
+            hintCancellationID: swipeHintCancellationID,
             onSwipe: handleSwipe,
-            onFinished: finishRound
+            onFinished: finishRound,
+            onUserInteraction: recordSwipeHintUserInteraction
         )
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -212,6 +224,7 @@ struct GameView: View {
     }
     
     private func startRound() {
+        cancelSwipeHints()
         let sourceCards = getUnseenCards()
 
         withAnimation(.spring(response: 0.34, dampingFraction: 0.88)) {
@@ -222,9 +235,13 @@ struct GameView: View {
             deckID = UUID()
             feedbackDismissID = UUID()
         }
+
+        scheduleSwipeHint(after: 2)
     }
 
     private func handleSwipe(at index: Int, direction: SwipeDirection) {
+        recordSwipeHintUserInteraction()
+
         guard roundCards.indices.contains(index) else { return }
         guard direction == .left || direction == .right else { return }
 
@@ -260,6 +277,7 @@ struct GameView: View {
     
 
     private func finishRound() {
+        cancelSwipeHints()
         let currentDeckID = deckID
 
         answeredCount = roundCards.count
@@ -271,6 +289,42 @@ struct GameView: View {
                 roundFinished = true
             }
         }
+    }
+
+    private func recordSwipeHintUserInteraction() {
+        swipeHintCancellationID = UUID()
+        scheduleSwipeHint(after: 20)
+    }
+
+    private func scheduleSwipeHint(after delay: TimeInterval) {
+        swipeHintWorkItem?.cancel()
+
+        guard !roundCards.isEmpty, !roundFinished else {
+            return
+        }
+
+        let scheduleID = UUID()
+        swipeHintScheduleID = scheduleID
+        let workItem = DispatchWorkItem {
+            guard swipeHintScheduleID == scheduleID,
+                  !roundCards.isEmpty,
+                  !roundFinished else {
+                return
+            }
+
+            swipeHintRequestID = UUID()
+            scheduleSwipeHint(after: 20)
+        }
+
+        swipeHintWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: workItem)
+    }
+
+    private func cancelSwipeHints() {
+        swipeHintWorkItem?.cancel()
+        swipeHintWorkItem = nil
+        swipeHintScheduleID = UUID()
+        swipeHintCancellationID = UUID()
     }
 
     private func scheduleFeedbackDismissal(for dismissID: UUID) {
@@ -399,8 +453,11 @@ private struct GuessFeedback: Identifiable {
 private struct GameSwipeStackView: UIViewRepresentable {
     let cards: [GameCardData]
     let deckID: UUID
+    let hintRequestID: UUID
+    let hintCancellationID: UUID
     let onSwipe: (Int, SwipeDirection) -> Void
     let onFinished: () -> Void
+    let onUserInteraction: () -> Void
 
     func makeCoordinator() -> Coordinator {
         Coordinator(parent: self)
@@ -415,6 +472,8 @@ private struct GameSwipeStackView: UIViewRepresentable {
 
         context.coordinator.lastRenderedCardIDs = cards.map(\.id)
         context.coordinator.lastDeckID = deckID
+        context.coordinator.lastHintRequestID = hintRequestID
+        context.coordinator.lastHintCancellationID = hintCancellationID
 
         stack.reloadData()
         return stack
@@ -423,6 +482,16 @@ private struct GameSwipeStackView: UIViewRepresentable {
     func updateUIView(_ uiView: SwipeCardStack, context: Context) {
         context.coordinator.parent = self
 
+        if context.coordinator.lastHintCancellationID != hintCancellationID {
+            context.coordinator.lastHintCancellationID = hintCancellationID
+            context.coordinator.cancelHintAnimation(on: uiView)
+        }
+
+        if context.coordinator.lastHintRequestID != hintRequestID {
+            context.coordinator.lastHintRequestID = hintRequestID
+            context.coordinator.playHintAnimation(on: uiView)
+        }
+
         let cardIDs = cards.map(\.id)
         let needsReload = context.coordinator.lastDeckID != deckID || context.coordinator.lastRenderedCardIDs != cardIDs
 
@@ -430,16 +499,117 @@ private struct GameSwipeStackView: UIViewRepresentable {
 
         context.coordinator.lastDeckID = deckID
         context.coordinator.lastRenderedCardIDs = cardIDs
+        context.coordinator.cancelHintAnimation(on: uiView)
         uiView.reloadData()
+    }
+
+    static func dismantleUIView(_ uiView: SwipeCardStack, coordinator: Coordinator) {
+        coordinator.cancelHintAnimation(on: uiView)
     }
 
     final class Coordinator: NSObject, SwipeCardStackDataSource, SwipeCardStackDelegate {
         var parent: GameSwipeStackView
         var lastRenderedCardIDs: [String] = []
         var lastDeckID: UUID?
+        var lastHintRequestID: UUID?
+        var lastHintCancellationID: UUID?
 
         init(parent: GameSwipeStackView) {
             self.parent = parent
+        }
+
+        func playHintAnimation(on stack: SwipeCardStack) {
+            guard let topCardIndex = stack.topCardIndex,
+                  let card = stack.card(forIndexAt: topCardIndex),
+                  card.window != nil else {
+                return
+            }
+
+            cancelHintAnimation(on: stack)
+
+            let rightTransform = CGAffineTransform(translationX: 38, y: 0).rotated(by: 0.04)
+            let leftTransform = CGAffineTransform(translationX: -38, y: 0).rotated(by: -0.04)
+            let rightOverlay = card.overlay(forDirection: .right)
+            let leftOverlay = card.overlay(forDirection: .left)
+
+            card.isUserInteractionEnabled = true
+
+            UIView.animateKeyframes(
+                withDuration: 1.35,
+                delay: 0,
+                options: [.calculationModeCubic, .allowUserInteraction],
+                animations: {
+                    UIView.addKeyframe(withRelativeStartTime: 0, relativeDuration: 0.22) {
+                        card.transform = rightTransform
+                        rightOverlay?.alpha = 0.35
+                        leftOverlay?.alpha = 0
+                    }
+
+                    UIView.addKeyframe(withRelativeStartTime: 0.22, relativeDuration: 0.18) {
+                        card.transform = .identity
+                        rightOverlay?.alpha = 0
+                    }
+
+                    UIView.addKeyframe(withRelativeStartTime: 0.48, relativeDuration: 0.22) {
+                        card.transform = leftTransform
+                        leftOverlay?.alpha = 0.35
+                        rightOverlay?.alpha = 0
+                    }
+
+                    UIView.addKeyframe(withRelativeStartTime: 0.70, relativeDuration: 0.20) {
+                        card.transform = .identity
+                        leftOverlay?.alpha = 0
+                    }
+                },
+                completion: { _ in
+                    card.transform = .identity
+                    rightOverlay?.alpha = 0
+                    leftOverlay?.alpha = 0
+                }
+            )
+        }
+
+        func cancelHintAnimation(on stack: SwipeCardStack) {
+            guard let topCardIndex = stack.topCardIndex,
+                  let card = stack.card(forIndexAt: topCardIndex) else {
+                return
+            }
+
+            cancelHintAnimation(on: card)
+        }
+
+        private func cancelHintAnimation(on card: SwipeCard) {
+            card.layer.removeAllAnimations()
+            card.overlay(forDirection: .right)?.layer.removeAllAnimations()
+            card.overlay(forDirection: .left)?.layer.removeAllAnimations()
+            card.transform = .identity
+            card.overlay(forDirection: .right)?.alpha = 0
+            card.overlay(forDirection: .left)?.alpha = 0
+        }
+
+        private func attachUserInteractionTracking(to card: SwipeCard) {
+            card.panGestureRecognizer.addTarget(self, action: #selector(handleCardPan(_:)))
+            card.tapGestureRecognizer.addTarget(self, action: #selector(handleCardTap(_:)))
+        }
+
+        @objc private func handleCardPan(_ recognizer: UIPanGestureRecognizer) {
+            guard recognizer.state == .began,
+                  let card = recognizer.view as? SwipeCard else {
+                return
+            }
+
+            cancelHintAnimation(on: card)
+            parent.onUserInteraction()
+        }
+
+        @objc private func handleCardTap(_ recognizer: UITapGestureRecognizer) {
+            guard recognizer.state == .ended,
+                  let card = recognizer.view as? SwipeCard else {
+                return
+            }
+
+            cancelHintAnimation(on: card)
+            parent.onUserInteraction()
         }
 
         func numberOfCards(in cardStack: SwipeCardStack) -> Int {
@@ -462,6 +632,7 @@ private struct GameSwipeStackView: UIViewRepresentable {
             let card = SwipeCard()
             card.swipeDirections = [.left, .right]
             card.content = makeCardContent(from: model)
+            attachUserInteractionTracking(to: card)
 
             card.setOverlays([
                 .left: makeOverlay(text: "FAKE", color: UIColor(Color.ffRed), alignment: .left),
