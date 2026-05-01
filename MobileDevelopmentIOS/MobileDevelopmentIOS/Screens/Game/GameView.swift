@@ -24,6 +24,7 @@ struct GameView: View {
     @State private var roundFinished = false
     @State private var lastResult: GuessFeedback?
     @State private var deckID = UUID()
+    @State private var didAttemptCardLoad = false
     @State private var feedbackDismissID = UUID()
     @State private var swipeHintRequestID = UUID()
     @State private var swipeHintCancellationID = UUID()
@@ -109,7 +110,10 @@ struct GameView: View {
     @ViewBuilder
     private var content: some View {
         ZStack(alignment: .bottom) {
-            if roundCards.isEmpty {
+            if !didAttemptCardLoad {
+                Color.clear
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if roundCards.isEmpty {
                 emptyState
             } else if roundFinished {
                 completedState
@@ -243,6 +247,7 @@ struct GameView: View {
         }
 
         let sourceCards = getUnseenCards()
+        didAttemptCardLoad = true
 
         withAnimation(.spring(response: 0.34, dampingFraction: 0.88)) {
             roundCards = sourceCards.shuffled()
