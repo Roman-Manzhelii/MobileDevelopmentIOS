@@ -13,35 +13,35 @@ struct HistoryRow: View {
     var imageData: Data? = nil
 
     var body: some View {
-        VStack(spacing: 10) {
+        HStack() {
             ZStack {
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.ffElevated)
+                RoundedRectangle(cornerRadius: 0)
+                    .fill(Color.ffCard)
 
                 if let imageData, let uiImage = UIImage(data: imageData) {
                     Image(uiImage: uiImage)
                         .resizable()
-                        .scaledToFill()
+                        .scaledToFit()
+                        .cornerRadius(12)
                 } else {
                     Image(systemName: "photo")
                         .font(.title3)
                         .foregroundStyle(Color.ffTextMuted)
                 }
             }
-            .frame(maxWidth: .infinity)
-            .frame(height: 132)
+            .frame(width: 200, height: 200)
             .clipShape(RoundedRectangle(cornerRadius: 12))
-
-            HStack(spacing: 10) {
+            Spacer(minLength: 10)
+            
+            VStack(spacing: 10) {
+                VerdictChip(verdict: verdict)
+                
                 Text(timestamp)
                     .font(.caption)
                     .foregroundStyle(Color.ffTextMuted)
                     .lineLimit(1)
-
-                Spacer(minLength: 8)
-
-                VerdictChip(verdict: verdict)
             }
+            .frame(width: 150)
         }
         .padding(12)
         .background(
@@ -60,6 +60,7 @@ struct HistoryRow: View {
     VStack(spacing: 10) {
         HistoryRow(timestamp: "Today, 2:14 PM", verdict: "Fake")
         HistoryRow(timestamp: "Mar 20, 2026 · 2:14 PM", verdict: "Real")
+        HistoryRow(timestamp: "Today, 2:14 PM", verdict: "Suspisious")
     }
     .padding()
     .background(Color.ffBackground)

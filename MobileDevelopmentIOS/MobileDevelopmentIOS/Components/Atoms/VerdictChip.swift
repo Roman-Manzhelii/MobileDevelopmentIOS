@@ -9,10 +9,10 @@ struct VerdictChip: View {
 
     var body: some View {
         Text(verdict)
-            .font(.caption2.weight(.bold))
+            .font(.headline.weight(.bold))
             .foregroundStyle(isReal ? Color.ffGreen : Color.ffRed)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 5)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
             .background(
                 (isReal ? Color.ffGreen : Color.ffRed).opacity(0.15),
                 in: Capsule()
