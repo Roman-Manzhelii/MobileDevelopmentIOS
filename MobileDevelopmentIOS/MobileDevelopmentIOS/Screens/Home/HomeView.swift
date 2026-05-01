@@ -76,6 +76,7 @@ struct HomeView: View {
         .onAppear {
             homeManager.recordDailyActivity(using: modelContext, activeUserID: activeUserManager.activeUserID)
             statsManager.refreshStats(using: modelContext, activeUserID: activeUserManager.activeUserID)
+            GameStreakReminderService.shared.showLaunchReminderIfPossible()
         }
     }
 }
