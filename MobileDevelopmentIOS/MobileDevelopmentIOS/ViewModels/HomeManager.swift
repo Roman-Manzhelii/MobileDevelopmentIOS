@@ -8,17 +8,7 @@ enum HomeManager {
         let today = calendar.startOfDay(for: now)
 
         do {
-            let descriptor = FetchDescriptor<UserProfile>()
-            let allProfiles = try modelContext.fetch(descriptor)
-            let profile: UserProfile
-            let selectedUUID = UUID(uuidString: activeUserID)
-
-            if let selectedUUID,
-               let selectedProfile = allProfiles.first(where: { $0.id == selectedUUID }) {
-                profile = selectedProfile
-            } else if let existing = allProfiles.first {
-                profile = existing
-            } else {
+            guard let profile = try selectedProfile(using: modelContext, activeUserID: activeUserID) else {
                 let created = UserProfile(
                     displayName: "User",
                     currentStreak: 1,
@@ -48,5 +38,26 @@ enum HomeManager {
         } catch {
             print("Failed to update daily activity- \(error.localizedDescription)")
         }
+    }
+
+    private static func selectedProfile(using modelContext: ModelContext, activeUserID: String) throws -> UserProfile? {
+        if let selectedUUID = UUID(uuidString: activeUserID) {
+            var descriptor = FetchDescriptor<UserProfile>(
+                predicate: #Predicate<UserProfile> { profile in
+                    profile.id == selectedUUID
+                }
+            )
+            descriptor.fetchLimit = 1
+
+            if let selectedProfile = try modelContext.fetch(descriptor).first {
+                return selectedProfile
+            }
+        }
+
+        var fallbackDescriptor = FetchDescriptor<UserProfile>(
+            sortBy: [SortDescriptor(\.displayName)]
+        )
+        fallbackDescriptor.fetchLimit = 1
+        return try modelContext.fetch(fallbackDescriptor).first
     }
 }

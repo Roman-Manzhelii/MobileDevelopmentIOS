@@ -13,11 +13,8 @@ struct ProfileView: View {
     @EnvironmentObject private var activeUserManager: ActiveUserManager
     @Environment(\.modelContext) private var modelContext
     @StateObject private var statsManager = StatsManager()
+    @State private var profile: UserProfile?
     @AppStorage("haptics_enabled") private var hapticsEnabled = true
-
-    private var profile: UserProfile? {
-        activeUserManager.selectedProfile(using: modelContext)
-    }
 
     private var accuracyPercentText: String {
         "\(Int((statsManager.accuracyProgress * 100).rounded()))%"
@@ -85,9 +82,17 @@ struct ProfileView: View {
             .padding(.horizontal, 18)
             .padding(.bottom, 20)
         }
-        .onAppear {
-            statsManager.refreshStats(using: modelContext, activeUserID: activeUserManager.activeUserID)
+        .task(id: activeUserManager.activeUserID) {
+            await refreshProfileDataAfterFirstFrame()
         }
+    }
+
+    @MainActor
+    private func refreshProfileDataAfterFirstFrame() async {
+        await Task.yield()
+
+        profile = activeUserManager.selectedProfile(using: modelContext)
+        statsManager.refreshStats(using: modelContext, activeUserID: activeUserManager.activeUserID)
     }
 
     private var userRow: some View {

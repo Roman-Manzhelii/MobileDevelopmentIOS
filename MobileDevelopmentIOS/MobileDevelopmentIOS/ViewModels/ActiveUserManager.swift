@@ -23,22 +23,34 @@ class ActiveUserManager: ObservableObject {
         activeUserID = profile.id.uuidString
     }
 
+    func selectUser(id: UUID) {
+        activeUserID = id.uuidString
+    }
+
     func clearActiveUser() {
         activeUserID = ""
     }
 
     func selectedProfile(using modelContext: ModelContext) -> UserProfile? {
         do {
-            let profiles = try modelContext.fetch(FetchDescriptor<UserProfile>())
-            if profiles.isEmpty { return nil }
             if let selectedUserUUID = selectedUserUUID {
-                for profile in profiles {
-                    if profile.id == selectedUserUUID {
-                        return profile
+                var selectedDescriptor = FetchDescriptor<UserProfile>(
+                    predicate: #Predicate<UserProfile> { profile in
+                        profile.id == selectedUserUUID
                     }
+                )
+                selectedDescriptor.fetchLimit = 1
+
+                if let selectedProfile = try modelContext.fetch(selectedDescriptor).first {
+                    return selectedProfile
                 }
             }
-            return profiles[0]
+
+            var fallbackDescriptor = FetchDescriptor<UserProfile>(
+                sortBy: [SortDescriptor(\.displayName)]
+            )
+            fallbackDescriptor.fetchLimit = 1
+            return try modelContext.fetch(fallbackDescriptor).first
         } catch {
             print("Failed to load selected user- \(error.localizedDescription)")
             return nil

@@ -239,16 +239,10 @@ struct DetectorView: View {
     @MainActor
     private func saveScanRecord(imageData: Data, verdictLabel: String) {
         do {
-            let descriptor = FetchDescriptor<UserProfile>()
-            let allProfiles = try modelContext.fetch(descriptor)
-            let selectedUUID = UUID(uuidString: activeUserManager.activeUserID)
             let profile: UserProfile
 
-            if let selectedUUID,
-               let selectedProfile = allProfiles.first(where: { $0.id == selectedUUID }) {
-                profile = selectedProfile
-            } else if let existing = allProfiles.first {
-                profile = existing
+            if let existingProfile = try selectedProfile() {
+                profile = existingProfile
             } else {
                 let created = UserProfile(displayName: "User")
                 modelContext.insert(created)
@@ -267,6 +261,27 @@ struct DetectorView: View {
         } catch {
             analysisError = "Scan succeeded, but failed to save history: \(error.localizedDescription)"
         }
+    }
+
+    private func selectedProfile() throws -> UserProfile? {
+        if let selectedUUID = activeUserManager.selectedUserUUID {
+            var descriptor = FetchDescriptor<UserProfile>(
+                predicate: #Predicate<UserProfile> { profile in
+                    profile.id == selectedUUID
+                }
+            )
+            descriptor.fetchLimit = 1
+
+            if let selectedProfile = try modelContext.fetch(descriptor).first {
+                return selectedProfile
+            }
+        }
+
+        var fallbackDescriptor = FetchDescriptor<UserProfile>(
+            sortBy: [SortDescriptor(\.displayName)]
+        )
+        fallbackDescriptor.fetchLimit = 1
+        return try modelContext.fetch(fallbackDescriptor).first
     }
 }
 
@@ -311,13 +326,21 @@ private struct PhotoLibraryPicker: UIViewControllerRepresentable {
             }
 
             provider.loadObject(ofClass: UIImage.self) { object, _ in
+                guard let image = object as? UIImage else {
+                    DispatchQueue.main.async {
+                        self.parent.isPresented = false
+                    }
+                    return
+                }
+
+                let imageData = image.jpegData(compressionQuality: 0.95)
+
                 DispatchQueue.main.async {
                     defer {
                         self.parent.isPresented = false
                     }
 
-                    guard let image = object as? UIImage,
-                          let imageData = image.jpegData(compressionQuality: 0.95) else {
+                    guard let imageData else {
                         return
                     }
 
@@ -358,13 +381,24 @@ private struct ImagePicker: UIViewControllerRepresentable {
             _ picker: UIImagePickerController,
             didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]
         ) {
-            if let image = info[.originalImage] as? UIImage,
-               let imageData = image.jpegData(compressionQuality: 0.95) {
-                let fileName = parent.sourceType == .camera ? "camera-capture.jpg" : "photo-library-image.jpg"
-                parent.onImagePicked(image, imageData, fileName)
+            guard let image = info[.originalImage] as? UIImage else {
+                parent.isPresented = false
+                return
             }
 
-            parent.isPresented = false
+            let fileName = parent.sourceType == .camera ? "camera-capture.jpg" : "photo-library-image.jpg"
+
+            DispatchQueue.global(qos: .userInitiated).async {
+                let imageData = image.jpegData(compressionQuality: 0.95)
+
+                DispatchQueue.main.async {
+                    if let imageData {
+                        self.parent.onImagePicked(image, imageData, fileName)
+                    }
+
+                    self.parent.isPresented = false
+                }
+            }
         }
 
         func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {

@@ -6,8 +6,10 @@ class GameManager {
 
     var cards: [GameCardData] = []
     
-    init() {
-        loadCards()
+    init(loadImmediately: Bool = true) {
+        if loadImmediately {
+            loadCards()
+        }
     }
     
     func loadCards() {

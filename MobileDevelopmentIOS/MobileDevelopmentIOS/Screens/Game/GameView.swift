@@ -12,14 +12,13 @@ import Shuffle
 struct GameView: View {
     @EnvironmentObject private var activeUserManager: ActiveUserManager
     @Environment(\.modelContext) private var context
-    @Query private var allSessions: [GameSession]
     
     
     private let feedbackDisplayDuration: TimeInterval = 1.5
     
     @AppStorage("haptics_enabled") private var hapticsEnabled = true
 
-    @State private var gameManager = GameManager()
+    @State private var gameManager = GameManager(loadImmediately: false)
     @State private var roundCards: [GameCardData] = []
     @State private var answeredCount = 0
     @State private var roundFinished = false
@@ -46,15 +45,22 @@ struct GameView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .padding(.horizontal, 18)
         .padding(.bottom, 20)
-        .onAppear {
-            if roundCards.isEmpty {
-                startRound()
-            } else {
-                scheduleSwipeHint(after: 2)
-            }
+        .task {
+            await prepareRoundAfterFirstFrame()
         }
         .onDisappear {
             cancelSwipeHints()
+        }
+    }
+
+    @MainActor
+    private func prepareRoundAfterFirstFrame() async {
+        await Task.yield()
+
+        if roundCards.isEmpty {
+            startRound()
+        } else {
+            scheduleSwipeHint(after: 2)
         }
     }
 
@@ -202,16 +208,20 @@ struct GameView: View {
     
     private func updateSwipeCount(correct: Int){
         do {
-            let descriptor = FetchDescriptor<UserProfile>()
-            let allProfiles = try context.fetch(descriptor)
-            let selectedUUID = UUID(uuidString: activeUserManager.activeUserID)
-            
-            guard let profile = allProfiles.first(where: { $0.id == selectedUUID }) ?? allProfiles.first else {
+            guard let profile = activeUserManager.selectedProfile(using: context) else {
                 print("No profile found to attach session to.")
                 return
             }
 
-            guard let gameSession = allSessions.first(where: { $0.userId == selectedUUID }) ?? allSessions.first else {
+            let profileID = profile.id
+            var sessionDescriptor = FetchDescriptor<GameSession>(
+                predicate: #Predicate<GameSession> { session in
+                    session.userId == profileID
+                }
+            )
+            sessionDescriptor.fetchLimit = 1
+
+            guard let gameSession = try context.fetch(sessionDescriptor).first else {
                 let newSession = GameSession(id: profile.id, totalSwipes: 1, correctGuesses: correct)
                 context.insert(newSession)
                 try context.save()
@@ -228,6 +238,10 @@ struct GameView: View {
     
     private func startRound() {
         cancelSwipeHints()
+        if gameManager.cards.isEmpty {
+            gameManager.loadCards()
+        }
+
         let sourceCards = getUnseenCards()
 
         withAnimation(.spring(response: 0.34, dampingFraction: 0.88)) {

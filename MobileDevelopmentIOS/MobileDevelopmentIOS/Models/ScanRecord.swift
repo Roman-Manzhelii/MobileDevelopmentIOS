@@ -13,7 +13,7 @@ class ScanRecord {
     var id: UUID
     var timestamp: Date
     var userProfileID: UUID?
-    var imageData: Data?
+    @Attribute(.externalStorage) var imageData: Data?
     var verdictLabel: String
 
     var displayVerdictLabel: String {

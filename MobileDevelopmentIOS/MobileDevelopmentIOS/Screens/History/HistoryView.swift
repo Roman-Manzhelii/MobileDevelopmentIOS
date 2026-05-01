@@ -11,20 +11,14 @@ import SwiftUI
 struct HistoryView: View {
     @EnvironmentObject private var activeUserManager: ActiveUserManager
     @Environment(\.modelContext) private var modelContext
-    @Query(sort: \ScanRecord.timestamp, order: .reverse) private var records: [ScanRecord]
+    @State private var records: [ScanRecord] = []
+    @State private var didLoadRecords = false
 
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "MMM d, yyyy · h:mm a"
         return formatter
     }()
-
-    private var filteredRecords: [ScanRecord] {
-        guard let selectedUUID = activeUserManager.selectedUserUUID else {
-            return records
-        }
-        return records.filter { $0.userProfileID == selectedUUID }
-    }
 
     var body: some View {
         ScrollView {
@@ -42,8 +36,8 @@ struct HistoryView: View {
                     .fill(Color.ffBorder)
                     .frame(height: 1)
 
-                VStack(spacing: 10) {
-                    ForEach(filteredRecords, id: \.id) { record in
+                LazyVStack(spacing: 10) {
+                    ForEach(records, id: \.id) { record in
                         HistoryRow(
                             timestamp: dateFormatter.string(from: record.timestamp),
                             verdict: record.displayVerdictLabel,
@@ -52,7 +46,11 @@ struct HistoryView: View {
                     }
                 }
 
-                if filteredRecords.isEmpty {
+                if !didLoadRecords {
+                    Color.clear
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 32)
+                } else if records.isEmpty {
                     Text("No scans yet")
                         .font(.subheadline)
                         .foregroundStyle(Color.ffTextMuted)
@@ -63,14 +61,52 @@ struct HistoryView: View {
             .padding(.horizontal, 18)
             .padding(.bottom, 20)
         }
+        .task(id: activeUserManager.activeUserID) {
+            await loadRecordsAfterFirstFrame()
+        }
+    }
+
+    @MainActor
+    private func loadRecordsAfterFirstFrame() async {
+        didLoadRecords = false
+        await Task.yield()
+        loadRecords()
+    }
+
+    private func loadRecords() {
+        var descriptor: FetchDescriptor<ScanRecord>
+
+        if let selectedUUID = activeUserManager.selectedUserUUID {
+            let selectedUserID = Optional(selectedUUID)
+            descriptor = FetchDescriptor<ScanRecord>(
+                predicate: #Predicate<ScanRecord> { record in
+                    record.userProfileID == selectedUserID
+                },
+                sortBy: [SortDescriptor(\.timestamp, order: .reverse)]
+            )
+        } else {
+            descriptor = FetchDescriptor<ScanRecord>(
+                sortBy: [SortDescriptor(\.timestamp, order: .reverse)]
+            )
+        }
+
+        do {
+            records = try modelContext.fetch(descriptor)
+        } catch {
+            records = []
+            print("Failed to load scan history - \(error.localizedDescription)")
+        }
+
+        didLoadRecords = true
     }
 
     private func clearAll() {
         do {
-            for record in filteredRecords {
+            for record in records {
                 modelContext.delete(record)
             }
             try modelContext.save()
+            records.removeAll()
         } catch {
             print("Failed to clear scan history - \(error.localizedDescription)")
         }

@@ -14,18 +14,8 @@ struct HomeView: View {
     @EnvironmentObject private var activeUserManager: ActiveUserManager
     @Environment(\.modelContext) private var modelContext
     @StateObject private var statsManager = StatsManager()
-    @Query(sort: \ScanRecord.timestamp, order: .reverse) private var scanRecords: [ScanRecord]
-
-    private var filteredScans: [ScanRecord] {
-        guard let selectedUUID = activeUserManager.selectedUserUUID else {
-            return scanRecords
-        }
-        return scanRecords.filter { $0.userProfileID == selectedUUID }
-    }
-
-    private var recentScans: [ScanRecord] {
-        Array(filteredScans.prefix(2))
-    }
+    @State private var recentScans: [ScanRecord] = []
+    @State private var didLoadRecentScans = false
 
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -54,7 +44,7 @@ struct HomeView: View {
                         selectedTab = .game
                     }
                 }
-                    
+
                 SectionLabel(title: "At-a-Glance Stats")
                 Stats3Grid(items: statsManager.stats)
 
@@ -64,16 +54,58 @@ struct HomeView: View {
             .padding(.horizontal, 18)
             .padding(.bottom, 20)
         }
-        .onAppear {
-            HomeManager.recordDailyActivity(using: modelContext, activeUserID: activeUserManager.activeUserID)
-            statsManager.refreshStats(using: modelContext, activeUserID: activeUserManager.activeUserID)
-            GameStreakReminderService.shared.showLaunchReminderIfPossible()
+        .task(id: activeUserManager.activeUserID) {
+            await refreshHomeDataAfterFirstFrame()
         }
+    }
+
+    @MainActor
+    private func refreshHomeDataAfterFirstFrame() async {
+        didLoadRecentScans = false
+        await Task.yield()
+
+        HomeManager.recordDailyActivity(using: modelContext, activeUserID: activeUserManager.activeUserID)
+        loadRecentScans()
+        statsManager.refreshStats(using: modelContext, activeUserID: activeUserManager.activeUserID)
+        GameStreakReminderService.shared.showLaunchReminderIfPossible()
+    }
+
+    private func loadRecentScans() {
+        var descriptor: FetchDescriptor<ScanRecord>
+
+        if let selectedUUID = activeUserManager.selectedUserUUID {
+            let selectedUserID = Optional(selectedUUID)
+            descriptor = FetchDescriptor<ScanRecord>(
+                predicate: #Predicate<ScanRecord> { record in
+                    record.userProfileID == selectedUserID
+                },
+                sortBy: [SortDescriptor(\.timestamp, order: .reverse)]
+            )
+        } else {
+            descriptor = FetchDescriptor<ScanRecord>(
+                sortBy: [SortDescriptor(\.timestamp, order: .reverse)]
+            )
+        }
+
+        descriptor.fetchLimit = 2
+
+        do {
+            recentScans = try modelContext.fetch(descriptor)
+        } catch {
+            recentScans = []
+            print("Failed loading recent scans- \(error.localizedDescription)")
+        }
+
+        didLoadRecentScans = true
     }
 
     @ViewBuilder
     private var recentActivityContent: some View {
-        if recentScans.isEmpty {
+        if !didLoadRecentScans {
+            Color.clear
+                .frame(maxWidth: .infinity)
+                .frame(height: 32)
+        } else if recentScans.isEmpty {
             recentActivityEmptyState
         } else {
             VStack(spacing: 10) {
@@ -89,38 +121,11 @@ struct HomeView: View {
     }
 
     private var recentActivityEmptyState: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "camera.viewfinder")
-                .font(.title2.weight(.semibold))
-                .foregroundStyle(Color.ffGold)
-                .frame(width: 44, height: 44)
-                .background(Color.ffElevated, in: RoundedRectangle(cornerRadius: 12))
-
-            VStack(spacing: 4) {
-                Text("No scans yet")
-                    .font(.headline.weight(.semibold))
-                    .foregroundStyle(Color.ffTextPrimary)
-
-                Text("Run your first detector scan to see results here.")
-                    .font(.subheadline)
-                    .foregroundStyle(Color.ffTextMuted)
-                    .multilineTextAlignment(.center)
-            }
-
-            OutlineButton(title: "Open Detector") {
-                selectedTab = .detector
-            }
-        }
-        .frame(maxWidth: .infinity)
-        .padding(18)
-        .background(
-            RoundedRectangle(cornerRadius: 14)
-                .fill(Color.ffCard)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 14)
-                        .strokeBorder(Color.ffBorder, lineWidth: 1)
-                )
-        )
+        Text("No scans yet")
+            .font(.subheadline)
+            .foregroundStyle(Color.ffTextMuted)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 32)
     }
 }
 
