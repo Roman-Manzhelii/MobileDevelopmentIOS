@@ -36,7 +36,7 @@ struct ProfileView: View {
     private var metrics: [MetricItem] {
         [
             MetricItem(value: "\(profile?.imagesAnalyzed ?? 0)", label: "Images Analyzed"),
-            MetricItem(value: "\(statsManager.scansCount)", label: "Cards Swiped"),
+            MetricItem(value: "\(statsManager.cardsSwipes)", label: "Cards Swiped"),
             MetricItem(value: "\(statsManager.dayStreak)", label: "Day Streak"),
             MetricItem(value: accuracyPercentText, label: "Accuracy"),
             MetricItem(value: "\(statsManager.correctSwipes)", label: "Correct Swipes"),
@@ -88,7 +88,7 @@ struct ProfileView: View {
 
                 SectionLabel(title: "Metrics")
                 MetricsGrid(items: metrics)
-
+                
                 SectionLabel(title: "Settings")
                 hapticsButton
 

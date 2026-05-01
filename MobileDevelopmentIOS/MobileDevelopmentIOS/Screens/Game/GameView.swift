@@ -12,8 +12,11 @@ import Shuffle
 struct GameView: View {
     @EnvironmentObject private var activeUserManager: ActiveUserManager
     @Environment(\.modelContext) private var context
+    @Query private var allSessions: [GameSession]
+    
+    
     private let feedbackDisplayDuration: TimeInterval = 1.5
-
+    
     @AppStorage("haptics_enabled") private var hapticsEnabled = true
 
     @State private var gameManager = GameManager()
@@ -185,7 +188,33 @@ struct GameView: View {
         let unseenCards = gameManager.cards.filter { !userProfile.seenGameCardIDs.contains($0.id) }
         return unseenCards.isEmpty ? gameManager.cards : unseenCards
     }
+    
+    private func updateSwipeCount(correct: Int){
+        do {
+            let descriptor = FetchDescriptor<UserProfile>()
+            let allProfiles = try context.fetch(descriptor)
+            let selectedUUID = UUID(uuidString: activeUserManager.activeUserID)
+            
+            guard let profile = allProfiles.first(where: { $0.id == selectedUUID }) ?? allProfiles.first else {
+                print("No profile found to attach session to.")
+                return
+            }
 
+            guard let gameSession = allSessions.first(where: { $0.userId == selectedUUID }) ?? allSessions.first else {
+                let newSession = GameSession(id: profile.id, totalSwipes: 1, correctGuesses: correct)
+                context.insert(newSession)
+                try context.save()
+                return
+                }
+            
+            gameSession.correctGuesses += correct
+            gameSession.totalSwipes = gameSession.totalSwipes + 1
+            try context.save()
+            } catch {
+                    print("Failed to create game session: \(error.localizedDescription)")
+            }
+    }
+    
     private func startRound() {
         let sourceCards = getUnseenCards()
 
@@ -220,16 +249,19 @@ struct GameView: View {
                 lastResult = nil
             }
         }
-
+        
+        updateSwipeCount(correct: isCorrect ? 1 : 0)
+        
         withAnimation(.spring(response: 0.35, dampingFraction: 0.88)) {
             answeredCount = min(index + 1, roundCards.count)
             lastResult = feedback
             feedbackDismissID = dismissID
         }
-
+        
         triggerHapticIfNeeded(isCorrect: isCorrect)
         scheduleFeedbackDismissal(for: dismissID)
     }
+    
 
     private func finishRound() {
         let currentDeckID = deckID

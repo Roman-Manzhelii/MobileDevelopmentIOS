@@ -8,15 +8,28 @@ import SwiftData
 
 @Model
 class GameSession {
-    var id: UUID
+    var userId: UUID
     var totalSwipes: Int
     var correctGuesses: Int
-    var datePlayed: Date
     
-    init(id: UUID = UUID(), totalSwipes: Int = 0, correctGuesses: Int = 0, datePlayed: Date = .now) {
-        self.id = id
+    init(id: UUID = UUID(), totalSwipes: Int = 0, correctGuesses: Int = 0) {
+        self.userId = id
         self.totalSwipes = totalSwipes
         self.correctGuesses = correctGuesses
-        self.datePlayed = datePlayed
     }
+    
+    
+    func incrementCorrect() {
+            totalSwipes += 1
+            correctGuesses += 1
+        }
+    
+    func incrementIncorrect() {
+            totalSwipes += 1
+        }
+    
+    var accuracyScore: Double {
+            guard totalSwipes > 0 else { return 0.0 }
+            return (Double(correctGuesses) / Double(totalSwipes)) * 100
+        }
 }

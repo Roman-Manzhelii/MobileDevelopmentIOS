@@ -55,7 +55,7 @@ struct HomeView: View {
                         selectedTab = .game
                     }
                 }
-
+                    
                 SectionLabel(title: "At-a-Glance Stats")
                 Stats3Grid(items: statsManager.stats)
 

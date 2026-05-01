@@ -141,9 +141,9 @@ struct StartupUserView: View {
             return
         }
 
-        let profile = UserProfile(displayName: trimmedName)
+        let profile = UserProfile(displayName: trimmedName, currentStreak: 1)
         modelContext.insert(profile)
-
+        
         do {
             try modelContext.save()
             activeUserManager.selectUser(profile)
