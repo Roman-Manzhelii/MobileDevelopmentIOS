@@ -60,7 +60,7 @@ struct HistoryRow: View {
     VStack(spacing: 10) {
         HistoryRow(timestamp: "Today, 2:14 PM", verdict: "Fake")
         HistoryRow(timestamp: "Mar 20, 2026 · 2:14 PM", verdict: "Real")
-        HistoryRow(timestamp: "Today, 2:14 PM", verdict: "Suspisious")
+        HistoryRow(timestamp: "Today, 2:14 PM", verdict: "Suspicious")
     }
     .padding()
     .background(Color.ffBackground)

@@ -64,7 +64,7 @@ struct HomeView: View {
                     ForEach(recentScans, id: \.id) { record in
                         HistoryRow(
                             timestamp: dateFormatter.string(from: record.timestamp),
-                            verdict: record.verdictLabel,
+                            verdict: record.displayVerdictLabel,
                             imageData: record.imageData
                         )
                     }

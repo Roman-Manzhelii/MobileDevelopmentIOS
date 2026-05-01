@@ -46,7 +46,7 @@ struct HistoryView: View {
                     ForEach(filteredRecords, id: \.id) { record in
                         HistoryRow(
                             timestamp: dateFormatter.string(from: record.timestamp),
-                            verdict: record.verdictLabel,
+                            verdict: record.displayVerdictLabel,
                             imageData: record.imageData
                         )
                     }

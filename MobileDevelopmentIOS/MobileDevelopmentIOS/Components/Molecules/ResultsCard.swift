@@ -209,10 +209,10 @@ struct ResultsCard: View {
     }
 
     private func detectionZone(for result: AiclipseCheckResponse) -> DetectionZone {
-        switch result.aiProbability {
-        case ..<0.38:
+        switch result.displayLabel.lowercased() {
+        case "real":
             return .real
-        case ..<0.62:
+        case "suspicious":
             return .suspicious
         default:
             return .fake

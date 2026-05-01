@@ -82,7 +82,7 @@ final class HomeManager: ObservableObject {
                     filename: record.imageFileName,
                     timestamp: dateFormatter.string(from: record.timestamp),
                     badgePrimary: "\(Int((record.aiProbability * 100).rounded()))%",
-                    badgeSecondary: record.verdictLabel
+                    badgeSecondary: record.displayVerdictLabel
                 )
             }
         } catch {

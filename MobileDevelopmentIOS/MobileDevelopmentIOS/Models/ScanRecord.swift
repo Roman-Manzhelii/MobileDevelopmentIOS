@@ -18,6 +18,21 @@ class ScanRecord {
     var aiProbability: Double
     var verdictLabel: String
 
+    var displayVerdictLabel: String {
+        let normalizedLabel = verdictLabel.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+
+        switch normalizedLabel {
+        case "real":
+            return "Real"
+        case "suspicious":
+            return "Suspicious"
+        case "fake", "ai":
+            return "Fake"
+        default:
+            return verdictLabel
+        }
+    }
+
     
     init(id: UUID = UUID(), timestamp: Date = .now, userProfileID: UUID? = nil, imageFileName: String, imageData: Data? = nil, aiProbability: Double, verdictLabel: String) {
         self.id = id
