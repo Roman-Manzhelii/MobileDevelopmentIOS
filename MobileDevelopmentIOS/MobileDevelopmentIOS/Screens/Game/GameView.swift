@@ -24,7 +24,8 @@ struct GameView: View {
     @State private var roundFinished = false
     @State private var lastResult: GuessFeedback?
     @State private var deckID = UUID()
-    @State private var didAttemptCardLoad = false
+    @State private var isPreparingRound = true
+    @State private var didFailToLoadCards = false
     @State private var feedbackDismissID = UUID()
     @State private var swipeHintRequestID = UUID()
     @State private var swipeHintCancellationID = UUID()
@@ -110,10 +111,10 @@ struct GameView: View {
     @ViewBuilder
     private var content: some View {
         ZStack(alignment: .bottom) {
-            if !didAttemptCardLoad {
+            if isPreparingRound {
                 Color.clear
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if roundCards.isEmpty {
+            } else if didFailToLoadCards {
                 emptyState
             } else if roundFinished {
                 completedState
@@ -242,12 +243,20 @@ struct GameView: View {
     
     private func startRound() {
         cancelSwipeHints()
+        isPreparingRound = true
+        didFailToLoadCards = false
+
         if gameManager.cards.isEmpty {
             gameManager.loadCards()
         }
 
         let sourceCards = getUnseenCards()
-        didAttemptCardLoad = true
+        guard !sourceCards.isEmpty else {
+            roundCards = []
+            isPreparingRound = false
+            didFailToLoadCards = true
+            return
+        }
 
         withAnimation(.spring(response: 0.34, dampingFraction: 0.88)) {
             roundCards = sourceCards.shuffled()
@@ -256,6 +265,7 @@ struct GameView: View {
             lastResult = nil
             deckID = UUID()
             feedbackDismissID = UUID()
+            isPreparingRound = false
         }
 
         scheduleSwipeHint(after: 2)
