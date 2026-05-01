@@ -531,32 +531,39 @@ private struct GameSwipeStackView: UIViewRepresentable {
             let leftTransform = CGAffineTransform(translationX: -38, y: 0).rotated(by: -0.04)
             let rightOverlay = card.overlay(forDirection: .right)
             let leftOverlay = card.overlay(forDirection: .left)
+            let moveRightDuration = 0.45
+            let holdRightDuration = 1.5
+            let moveLeftDuration = 0.65
+            let holdLeftDuration = 1.5
+            let returnDuration = 0.45
+            let totalDuration = moveRightDuration + holdRightDuration + moveLeftDuration + holdLeftDuration + returnDuration
 
             card.isUserInteractionEnabled = true
 
             UIView.animateKeyframes(
-                withDuration: 1.35,
+                withDuration: totalDuration,
                 delay: 0,
                 options: [.calculationModeCubic, .allowUserInteraction],
                 animations: {
-                    UIView.addKeyframe(withRelativeStartTime: 0, relativeDuration: 0.22) {
+                    UIView.addKeyframe(withRelativeStartTime: 0, relativeDuration: moveRightDuration / totalDuration) {
                         card.transform = rightTransform
                         rightOverlay?.alpha = 0.35
                         leftOverlay?.alpha = 0
                     }
 
-                    UIView.addKeyframe(withRelativeStartTime: 0.22, relativeDuration: 0.18) {
-                        card.transform = .identity
-                        rightOverlay?.alpha = 0
-                    }
-
-                    UIView.addKeyframe(withRelativeStartTime: 0.48, relativeDuration: 0.22) {
+                    UIView.addKeyframe(
+                        withRelativeStartTime: (moveRightDuration + holdRightDuration) / totalDuration,
+                        relativeDuration: moveLeftDuration / totalDuration
+                    ) {
                         card.transform = leftTransform
                         leftOverlay?.alpha = 0.35
                         rightOverlay?.alpha = 0
                     }
 
-                    UIView.addKeyframe(withRelativeStartTime: 0.70, relativeDuration: 0.20) {
+                    UIView.addKeyframe(
+                        withRelativeStartTime: (moveRightDuration + holdRightDuration + moveLeftDuration + holdLeftDuration) / totalDuration,
+                        relativeDuration: returnDuration / totalDuration
+                    ) {
                         card.transform = .identity
                         leftOverlay?.alpha = 0
                     }
