@@ -13,7 +13,6 @@ struct HomeView: View {
 
     @EnvironmentObject private var activeUserManager: ActiveUserManager
     @Environment(\.modelContext) private var modelContext
-    @StateObject private var homeManager = HomeManager()
     @StateObject private var statsManager = StatsManager()
     @Query(sort: \ScanRecord.timestamp, order: .reverse) private var scanRecords: [ScanRecord]
 
@@ -66,7 +65,7 @@ struct HomeView: View {
             .padding(.bottom, 20)
         }
         .onAppear {
-            homeManager.recordDailyActivity(using: modelContext, activeUserID: activeUserManager.activeUserID)
+            HomeManager.recordDailyActivity(using: modelContext, activeUserID: activeUserManager.activeUserID)
             statsManager.refreshStats(using: modelContext, activeUserID: activeUserManager.activeUserID)
             GameStreakReminderService.shared.showLaunchReminderIfPossible()
         }

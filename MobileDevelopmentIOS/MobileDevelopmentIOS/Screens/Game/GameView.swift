@@ -254,7 +254,6 @@ struct GameView: View {
         let dismissID = UUID()
         let feedback = GuessFeedback(
             card: card,
-            guessedReal: guessedReal,
             isCorrect: isCorrect
         )
 
@@ -419,35 +418,18 @@ private struct FeedbackToast: View {
 private struct GuessFeedback: Identifiable {
     let id = UUID()
     let card: GameCardData
-    let guessedReal: Bool
     let isCorrect: Bool
-
-    var guessedLabel: String {
-        guessedReal ? "Real" : "Fake"
-    }
 
     var actualLabel: String {
         card.isReal ? "Real" : "Fake"
-    }
-
-    var title: String {
-        isCorrect ? "Correct guess" : "Not this one"
     }
 
     var toastText: String {
         isCorrect ? "Correct" : "Wrong - It was \(actualLabel)"
     }
 
-    var summary: String {
-        "You swiped \(guessedLabel). The correct answer was \(actualLabel)."
-    }
-
     var highlightColor: Color {
         isCorrect ? .ffGreen : .ffRed
-    }
-
-    var actualColor: Color {
-        card.isReal ? .ffGreen : .ffRed
     }
 }
 

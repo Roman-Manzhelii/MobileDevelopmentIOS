@@ -4,7 +4,6 @@ import Combine
 
 @MainActor
 class StatsManager: ObservableObject {
-    @Published private(set) var scansCount = 0
     @Published private(set) var accuracyProgress = 0.0
     @Published private(set) var dayStreak = 0
     @Published private(set) var correctSwipes = 0
@@ -40,9 +39,6 @@ class StatsManager: ObservableObject {
                 }
             
             let scansThisWeek = recentScans.count
-            print("gamesession correct- \(gameSession.correctGuesses)")
-            print("gamesession total- \(gameSession.totalSwipes)")
-            print("gamesession id \(gameSession.id)")
             
             var accuracyPercentage = 0.0
             if (gameSession.totalSwipes != 0){
@@ -53,7 +49,6 @@ class StatsManager: ObservableObject {
             let correct = gameSession.correctGuesses
             let wrong = (gameSession.totalSwipes - gameSession.correctGuesses)
             
-            self.scansCount = scansThisWeek
             self.accuracyProgress = accuracyPercentage
             self.dayStreak = streak
             self.correctSwipes = correct
@@ -66,7 +61,6 @@ class StatsManager: ObservableObject {
                 StatItem(value: "\(streak)🔥", label: "Day streak")
             ]
         } catch {
-            scansCount = 0
             accuracyProgress = 0
             dayStreak = 0
             correctSwipes = 0

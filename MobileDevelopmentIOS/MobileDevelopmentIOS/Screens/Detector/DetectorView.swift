@@ -225,9 +225,7 @@ struct DetectorView: View {
             }
 
             saveScanRecord(
-                fileName: fileName,
                 imageData: selectedImageData,
-                aiProbability: result.aiProbability,
                 verdictLabel: result.displayLabel
             )
         } catch {
@@ -239,7 +237,7 @@ struct DetectorView: View {
     }
 
     @MainActor
-    private func saveScanRecord(fileName: String, imageData: Data, aiProbability: Double, verdictLabel: String) {
+    private func saveScanRecord(imageData: Data, verdictLabel: String) {
         do {
             let descriptor = FetchDescriptor<UserProfile>()
             let allProfiles = try modelContext.fetch(descriptor)
@@ -259,9 +257,7 @@ struct DetectorView: View {
 
             let record = ScanRecord(
                 userProfileID: profile.id,
-                imageFileName: fileName,
                 imageData: imageData,
-                aiProbability: aiProbability,
                 verdictLabel: verdictLabel
             )
             modelContext.insert(record)
