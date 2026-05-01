@@ -51,7 +51,7 @@ struct ProfileView: View {
                     .fill(Color.ffBorder)
                     .frame(height: 1)
 
-                HStack(alignment: .stretch, spacing: 10) {
+                HStack(alignment: .center, spacing: 10) {
                     userRow
                     hapticsButton
                 }
@@ -81,10 +81,6 @@ struct ProfileView: View {
 
                 SectionLabel(title: "Metrics")
                 MetricsGrid(items: metrics)
-
-                Text("All metrics come from SwiftData models.")
-                    .font(.caption2)
-                    .foregroundStyle(Color.ffTextMuted)
             }
             .padding(.horizontal, 18)
             .padding(.bottom, 20)
@@ -147,7 +143,8 @@ struct ProfileView: View {
                     .minimumScaleFactor(0.75)
             }
             .padding(12)
-            .frame(width: 112, minHeight: 92)
+            .frame(width: 112)
+            .frame(minHeight: 92)
             .background(
                 RoundedRectangle(cornerRadius: 14)
                     .fill(Color.ffCard)
