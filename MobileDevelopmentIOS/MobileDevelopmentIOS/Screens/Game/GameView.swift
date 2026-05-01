@@ -12,20 +12,23 @@ import Shuffle
 struct GameView: View {
     @EnvironmentObject private var activeUserManager: ActiveUserManager
     @Environment(\.modelContext) private var context
-    @Query private var allSessions: [GameSession]
     
     
     private let feedbackDisplayDuration: TimeInterval = 1.5
     
     @AppStorage("haptics_enabled") private var hapticsEnabled = true
 
-    @State private var gameManager = GameManager()
+    @State private var gameManager = GameManager(loadImmediately: false)
     @State private var roundCards: [GameCardData] = []
     @State private var answeredCount = 0
     @State private var roundFinished = false
     @State private var lastResult: GuessFeedback?
     @State private var deckID = UUID()
     @State private var feedbackDismissID = UUID()
+    @State private var swipeHintRequestID = UUID()
+    @State private var swipeHintCancellationID = UUID()
+    @State private var swipeHintScheduleID = UUID()
+    @State private var swipeHintWorkItem: DispatchWorkItem?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -42,10 +45,22 @@ struct GameView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .padding(.horizontal, 18)
         .padding(.bottom, 20)
-        .onAppear {
-            if roundCards.isEmpty {
-                startRound()
-            }
+        .task {
+            await prepareRoundAfterFirstFrame()
+        }
+        .onDisappear {
+            cancelSwipeHints()
+        }
+    }
+
+    @MainActor
+    private func prepareRoundAfterFirstFrame() async {
+        await Task.yield()
+
+        if roundCards.isEmpty {
+            startRound()
+        } else {
+            scheduleSwipeHint(after: 2)
         }
     }
 
@@ -71,21 +86,24 @@ struct GameView: View {
     }
 
     private var instructionRow: some View {
-        HStack(spacing: 10) {
-            InstructionPill(
+        HStack {
+            SwipeDirectionLabel(
                 title: "Fake",
-                subtitle: "Swipe left",
                 systemImage: "arrow.left",
-                tint: .ffRed
+                tint: .ffRed,
+                side: .left
             )
 
-            InstructionPill(
+            Spacer(minLength: 12)
+
+            SwipeDirectionLabel(
                 title: "Real",
-                subtitle: "Swipe right",
                 systemImage: "arrow.right",
-                tint: .ffGreen
+                tint: .ffGreen,
+                side: .right
             )
         }
+        .padding(.horizontal, 6)
     }
 
     @ViewBuilder
@@ -120,8 +138,11 @@ struct GameView: View {
         GameSwipeStackView(
             cards: roundCards,
             deckID: deckID,
+            hintRequestID: swipeHintRequestID,
+            hintCancellationID: swipeHintCancellationID,
             onSwipe: handleSwipe,
-            onFinished: finishRound
+            onFinished: finishRound,
+            onUserInteraction: recordSwipeHintUserInteraction
         )
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -187,16 +208,20 @@ struct GameView: View {
     
     private func updateSwipeCount(correct: Int){
         do {
-            let descriptor = FetchDescriptor<UserProfile>()
-            let allProfiles = try context.fetch(descriptor)
-            let selectedUUID = UUID(uuidString: activeUserManager.activeUserID)
-            
-            guard let profile = allProfiles.first(where: { $0.id == selectedUUID }) ?? allProfiles.first else {
+            guard let profile = activeUserManager.selectedProfile(using: context) else {
                 print("No profile found to attach session to.")
                 return
             }
 
-            guard let gameSession = allSessions.first(where: { $0.userId == selectedUUID }) ?? allSessions.first else {
+            let profileID = profile.id
+            var sessionDescriptor = FetchDescriptor<GameSession>(
+                predicate: #Predicate<GameSession> { session in
+                    session.userId == profileID
+                }
+            )
+            sessionDescriptor.fetchLimit = 1
+
+            guard let gameSession = try context.fetch(sessionDescriptor).first else {
                 let newSession = GameSession(id: profile.id, totalSwipes: 1, correctGuesses: correct)
                 context.insert(newSession)
                 try context.save()
@@ -212,6 +237,11 @@ struct GameView: View {
     }
     
     private func startRound() {
+        cancelSwipeHints()
+        if gameManager.cards.isEmpty {
+            gameManager.loadCards()
+        }
+
         let sourceCards = getUnseenCards()
 
         withAnimation(.spring(response: 0.34, dampingFraction: 0.88)) {
@@ -222,9 +252,13 @@ struct GameView: View {
             deckID = UUID()
             feedbackDismissID = UUID()
         }
+
+        scheduleSwipeHint(after: 2)
     }
 
     private func handleSwipe(at index: Int, direction: SwipeDirection) {
+        recordSwipeHintUserInteraction()
+
         guard roundCards.indices.contains(index) else { return }
         guard direction == .left || direction == .right else { return }
 
@@ -234,7 +268,6 @@ struct GameView: View {
         let dismissID = UUID()
         let feedback = GuessFeedback(
             card: card,
-            guessedReal: guessedReal,
             isCorrect: isCorrect
         )
 
@@ -260,6 +293,7 @@ struct GameView: View {
     
 
     private func finishRound() {
+        cancelSwipeHints()
         let currentDeckID = deckID
 
         answeredCount = roundCards.count
@@ -271,6 +305,42 @@ struct GameView: View {
                 roundFinished = true
             }
         }
+    }
+
+    private func recordSwipeHintUserInteraction() {
+        swipeHintCancellationID = UUID()
+        scheduleSwipeHint(after: 20)
+    }
+
+    private func scheduleSwipeHint(after delay: TimeInterval) {
+        swipeHintWorkItem?.cancel()
+
+        guard !roundCards.isEmpty, !roundFinished else {
+            return
+        }
+
+        let scheduleID = UUID()
+        swipeHintScheduleID = scheduleID
+        let workItem = DispatchWorkItem {
+            guard swipeHintScheduleID == scheduleID,
+                  !roundCards.isEmpty,
+                  !roundFinished else {
+                return
+            }
+
+            swipeHintRequestID = UUID()
+            scheduleSwipeHint(after: 20)
+        }
+
+        swipeHintWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: workItem)
+    }
+
+    private func cancelSwipeHints() {
+        swipeHintWorkItem?.cancel()
+        swipeHintWorkItem = nil
+        swipeHintScheduleID = UUID()
+        swipeHintCancellationID = UUID()
     }
 
     private func scheduleFeedbackDismissal(for dismissID: UUID) {
@@ -291,43 +361,41 @@ struct GameView: View {
     }
 }
 
-private struct InstructionPill: View {
+private struct SwipeDirectionLabel: View {
+    enum Side {
+        case left
+        case right
+    }
+
     let title: String
-    let subtitle: String
     let systemImage: String
     let tint: Color
+    let side: Side
 
     var body: some View {
-        HStack(spacing: 10) {
-            Image(systemName: systemImage)
-                .font(.headline.weight(.bold))
-                .foregroundStyle(tint)
-                .frame(width: 34, height: 34)
-                .background(tint.opacity(0.14), in: Circle())
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.headline.weight(.semibold))
-                    .foregroundStyle(Color.ffTextPrimary)
-
-                Text(subtitle)
-                    .font(.caption)
-                    .foregroundStyle(Color.ffTextMuted)
+        HStack(spacing: 7) {
+            if side == .right {
+                titleText
             }
 
-            Spacer(minLength: 0)
+            Image(systemName: systemImage)
+                .font(.caption.weight(.bold))
+                .foregroundStyle(tint)
+                .frame(width: 22, height: 22)
+                .background(tint.opacity(0.12), in: Circle())
+
+            if side == .left {
+                titleText
+            }
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(Color.ffCard)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(Color.ffBorder, lineWidth: 1)
-        )
+        .foregroundStyle(tint)
+    }
+
+    private var titleText: some View {
+        Text(title)
+            .font(.caption.weight(.semibold))
+            .textCase(.uppercase)
+            .lineLimit(1)
     }
 }
 
@@ -364,43 +432,29 @@ private struct FeedbackToast: View {
 private struct GuessFeedback: Identifiable {
     let id = UUID()
     let card: GameCardData
-    let guessedReal: Bool
     let isCorrect: Bool
-
-    var guessedLabel: String {
-        guessedReal ? "Real" : "Fake"
-    }
 
     var actualLabel: String {
         card.isReal ? "Real" : "Fake"
-    }
-
-    var title: String {
-        isCorrect ? "Correct guess" : "Not this one"
     }
 
     var toastText: String {
         isCorrect ? "Correct" : "Wrong - It was \(actualLabel)"
     }
 
-    var summary: String {
-        "You swiped \(guessedLabel). The correct answer was \(actualLabel)."
-    }
-
     var highlightColor: Color {
         isCorrect ? .ffGreen : .ffRed
-    }
-
-    var actualColor: Color {
-        card.isReal ? .ffGreen : .ffRed
     }
 }
 
 private struct GameSwipeStackView: UIViewRepresentable {
     let cards: [GameCardData]
     let deckID: UUID
+    let hintRequestID: UUID
+    let hintCancellationID: UUID
     let onSwipe: (Int, SwipeDirection) -> Void
     let onFinished: () -> Void
+    let onUserInteraction: () -> Void
 
     func makeCoordinator() -> Coordinator {
         Coordinator(parent: self)
@@ -415,6 +469,8 @@ private struct GameSwipeStackView: UIViewRepresentable {
 
         context.coordinator.lastRenderedCardIDs = cards.map(\.id)
         context.coordinator.lastDeckID = deckID
+        context.coordinator.lastHintRequestID = hintRequestID
+        context.coordinator.lastHintCancellationID = hintCancellationID
 
         stack.reloadData()
         return stack
@@ -423,6 +479,16 @@ private struct GameSwipeStackView: UIViewRepresentable {
     func updateUIView(_ uiView: SwipeCardStack, context: Context) {
         context.coordinator.parent = self
 
+        if context.coordinator.lastHintCancellationID != hintCancellationID {
+            context.coordinator.lastHintCancellationID = hintCancellationID
+            context.coordinator.cancelHintAnimation(on: uiView)
+        }
+
+        if context.coordinator.lastHintRequestID != hintRequestID {
+            context.coordinator.lastHintRequestID = hintRequestID
+            context.coordinator.playHintAnimation(on: uiView)
+        }
+
         let cardIDs = cards.map(\.id)
         let needsReload = context.coordinator.lastDeckID != deckID || context.coordinator.lastRenderedCardIDs != cardIDs
 
@@ -430,16 +496,124 @@ private struct GameSwipeStackView: UIViewRepresentable {
 
         context.coordinator.lastDeckID = deckID
         context.coordinator.lastRenderedCardIDs = cardIDs
+        context.coordinator.cancelHintAnimation(on: uiView)
         uiView.reloadData()
+    }
+
+    static func dismantleUIView(_ uiView: SwipeCardStack, coordinator: Coordinator) {
+        coordinator.cancelHintAnimation(on: uiView)
     }
 
     final class Coordinator: NSObject, SwipeCardStackDataSource, SwipeCardStackDelegate {
         var parent: GameSwipeStackView
         var lastRenderedCardIDs: [String] = []
         var lastDeckID: UUID?
+        var lastHintRequestID: UUID?
+        var lastHintCancellationID: UUID?
 
         init(parent: GameSwipeStackView) {
             self.parent = parent
+        }
+
+        func playHintAnimation(on stack: SwipeCardStack) {
+            guard let topCardIndex = stack.topCardIndex,
+                  let card = stack.card(forIndexAt: topCardIndex),
+                  card.window != nil else {
+                return
+            }
+
+            cancelHintAnimation(on: stack)
+
+            let rightTransform = CGAffineTransform(translationX: 38, y: 0).rotated(by: 0.04)
+            let leftTransform = CGAffineTransform(translationX: -38, y: 0).rotated(by: -0.04)
+            let rightOverlay = card.overlay(forDirection: .right)
+            let leftOverlay = card.overlay(forDirection: .left)
+            let moveRightDuration = 0.45
+            let holdRightDuration = 1.5
+            let moveLeftDuration = 0.65
+            let holdLeftDuration = 1.5
+            let returnDuration = 0.45
+            let totalDuration = moveRightDuration + holdRightDuration + moveLeftDuration + holdLeftDuration + returnDuration
+
+            card.isUserInteractionEnabled = true
+
+            UIView.animateKeyframes(
+                withDuration: totalDuration,
+                delay: 0,
+                options: [.calculationModeCubic, .allowUserInteraction],
+                animations: {
+                    UIView.addKeyframe(withRelativeStartTime: 0, relativeDuration: moveRightDuration / totalDuration) {
+                        card.transform = rightTransform
+                        rightOverlay?.alpha = 0.35
+                        leftOverlay?.alpha = 0
+                    }
+
+                    UIView.addKeyframe(
+                        withRelativeStartTime: (moveRightDuration + holdRightDuration) / totalDuration,
+                        relativeDuration: moveLeftDuration / totalDuration
+                    ) {
+                        card.transform = leftTransform
+                        leftOverlay?.alpha = 0.35
+                        rightOverlay?.alpha = 0
+                    }
+
+                    UIView.addKeyframe(
+                        withRelativeStartTime: (moveRightDuration + holdRightDuration + moveLeftDuration + holdLeftDuration) / totalDuration,
+                        relativeDuration: returnDuration / totalDuration
+                    ) {
+                        card.transform = .identity
+                        leftOverlay?.alpha = 0
+                    }
+                },
+                completion: { _ in
+                    card.transform = .identity
+                    rightOverlay?.alpha = 0
+                    leftOverlay?.alpha = 0
+                }
+            )
+        }
+
+        func cancelHintAnimation(on stack: SwipeCardStack) {
+            guard let topCardIndex = stack.topCardIndex,
+                  let card = stack.card(forIndexAt: topCardIndex) else {
+                return
+            }
+
+            cancelHintAnimation(on: card)
+        }
+
+        private func cancelHintAnimation(on card: SwipeCard) {
+            card.layer.removeAllAnimations()
+            card.overlay(forDirection: .right)?.layer.removeAllAnimations()
+            card.overlay(forDirection: .left)?.layer.removeAllAnimations()
+            card.transform = .identity
+            card.overlay(forDirection: .right)?.alpha = 0
+            card.overlay(forDirection: .left)?.alpha = 0
+        }
+
+        private func attachUserInteractionTracking(to card: SwipeCard) {
+            card.panGestureRecognizer.addTarget(self, action: #selector(handleCardPan(_:)))
+            card.tapGestureRecognizer.addTarget(self, action: #selector(handleCardTap(_:)))
+        }
+
+        @objc private func handleCardPan(_ recognizer: UIPanGestureRecognizer) {
+            guard recognizer.state == .began,
+                  let card = recognizer.view as? SwipeCard else {
+                return
+            }
+
+            cancelHintAnimation(on: card)
+            parent.onUserInteraction()
+        }
+
+        @objc private func handleCardTap(_ recognizer: UITapGestureRecognizer) {
+            guard recognizer.state == .ended,
+                  let card = recognizer.view as? SwipeCard else {
+                return
+            }
+
+            cancelHintAnimation(on: card)
+            parent.onUserInteraction()
         }
 
         func numberOfCards(in cardStack: SwipeCardStack) -> Int {
@@ -462,6 +636,7 @@ private struct GameSwipeStackView: UIViewRepresentable {
             let card = SwipeCard()
             card.swipeDirections = [.left, .right]
             card.content = makeCardContent(from: model)
+            attachUserInteractionTracking(to: card)
 
             card.setOverlays([
                 .left: makeOverlay(text: "FAKE", color: UIColor(Color.ffRed), alignment: .left),

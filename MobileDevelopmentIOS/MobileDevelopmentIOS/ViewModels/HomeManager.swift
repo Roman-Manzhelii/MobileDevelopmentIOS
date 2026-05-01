@@ -1,41 +1,14 @@
 import Foundation
 import SwiftData
-import Combine
 
-@MainActor
-final class HomeManager: ObservableObject {
-    struct RecentScanItem: Identifiable {
-        let id: UUID
-        let filename: String
-        let timestamp: String
-        let badgePrimary: String
-        let badgeSecondary: String?
-    }
-
-    @Published private(set) var recentActivity: [RecentScanItem] = []
-
-    private let dateFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "MMM d, yyyy · h:mm a"
-        return f
-    }()
-
-    func recordDailyActivity(using modelContext: ModelContext, activeUserID: String = "", now: Date = .now) {
+enum HomeManager {
+    @MainActor
+    static func recordDailyActivity(using modelContext: ModelContext, activeUserID: String = "", now: Date = .now) {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: now)
 
         do {
-            let descriptor = FetchDescriptor<UserProfile>()
-            let allProfiles = try modelContext.fetch(descriptor)
-            let profile: UserProfile
-            let selectedUUID = UUID(uuidString: activeUserID)
-
-            if let selectedUUID,
-               let selectedProfile = allProfiles.first(where: { $0.id == selectedUUID }) {
-                profile = selectedProfile
-            } else if let existing = allProfiles.first {
-                profile = existing
-            } else {
+            guard let profile = try selectedProfile(using: modelContext, activeUserID: activeUserID) else {
                 let created = UserProfile(
                     displayName: "User",
                     currentStreak: 1,
@@ -53,7 +26,7 @@ final class HomeManager: ObservableObject {
             }
 
             if let yesterday = calendar.date(byAdding: .day, value: -1, to: today),
-                calendar.isDate(lastActive, inSameDayAs: yesterday) {
+               calendar.isDate(lastActive, inSameDayAs: yesterday) {
                 profile.currentStreak += 1
             } else {
                 profile.currentStreak = 1
@@ -67,28 +40,24 @@ final class HomeManager: ObservableObject {
         }
     }
 
-    func loadRecent(using modelContext: ModelContext, limit: Int = 2) {
-        var descriptor = FetchDescriptor<ScanRecord>(
-            sortBy: [SortDescriptor(\.timestamp, order: .reverse)]
-        )
+    private static func selectedProfile(using modelContext: ModelContext, activeUserID: String) throws -> UserProfile? {
+        if let selectedUUID = UUID(uuidString: activeUserID) {
+            var descriptor = FetchDescriptor<UserProfile>(
+                predicate: #Predicate<UserProfile> { profile in
+                    profile.id == selectedUUID
+                }
+            )
+            descriptor.fetchLimit = 1
 
-        descriptor.fetchLimit = limit
-
-        do {
-            let records = try modelContext.fetch(descriptor)
-            recentActivity = records.map { record in
-                RecentScanItem(
-                    id: record.id,
-                    filename: record.imageFileName,
-                    timestamp: dateFormatter.string(from: record.timestamp),
-                    badgePrimary: "\(Int((record.aiProbability * 100).rounded()))%",
-                    badgeSecondary: record.verdictLabel
-                )
+            if let selectedProfile = try modelContext.fetch(descriptor).first {
+                return selectedProfile
             }
-        } catch {
-            recentActivity = []
-            print("Failed loading home recent activity- \(error.localizedDescription)")
         }
-    }
 
+        var fallbackDescriptor = FetchDescriptor<UserProfile>(
+            sortBy: [SortDescriptor(\.displayName)]
+        )
+        fallbackDescriptor.fetchLimit = 1
+        return try modelContext.fetch(fallbackDescriptor).first
+    }
 }

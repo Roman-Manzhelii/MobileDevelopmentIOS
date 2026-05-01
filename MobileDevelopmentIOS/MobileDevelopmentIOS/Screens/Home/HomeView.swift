@@ -13,20 +13,9 @@ struct HomeView: View {
 
     @EnvironmentObject private var activeUserManager: ActiveUserManager
     @Environment(\.modelContext) private var modelContext
-    @StateObject private var homeManager = HomeManager()
     @StateObject private var statsManager = StatsManager()
-    @Query(sort: \ScanRecord.timestamp, order: .reverse) private var scanRecords: [ScanRecord]
-
-    private var filteredScans: [ScanRecord] {
-        guard let selectedUUID = activeUserManager.selectedUserUUID else {
-            return scanRecords
-        }
-        return scanRecords.filter { $0.userProfileID == selectedUUID }
-    }
-
-    private var recentScans: [ScanRecord] {
-        Array(filteredScans.prefix(2))
-    }
+    @State private var recentScans: [ScanRecord] = []
+    @State private var didLoadRecentScans = false
 
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -55,28 +44,88 @@ struct HomeView: View {
                         selectedTab = .game
                     }
                 }
-                    
+
                 SectionLabel(title: "At-a-Glance Stats")
                 Stats3Grid(items: statsManager.stats)
 
                 SectionLabel(title: "Recent Activity")
-                VStack(spacing: 10) {
-                    ForEach(recentScans, id: \.id) { record in
-                        HistoryRow(
-                            timestamp: dateFormatter.string(from: record.timestamp),
-                            verdict: record.verdictLabel,
-                            imageData: record.imageData
-                        )
-                    }
-                }
+                recentActivityContent
             }
             .padding(.horizontal, 18)
             .padding(.bottom, 20)
         }
-        .onAppear {
-            homeManager.recordDailyActivity(using: modelContext, activeUserID: activeUserManager.activeUserID)
-            statsManager.refreshStats(using: modelContext, activeUserID: activeUserManager.activeUserID)
+        .task(id: activeUserManager.activeUserID) {
+            await refreshHomeDataAfterFirstFrame()
         }
+    }
+
+    @MainActor
+    private func refreshHomeDataAfterFirstFrame() async {
+        didLoadRecentScans = false
+        await Task.yield()
+
+        HomeManager.recordDailyActivity(using: modelContext, activeUserID: activeUserManager.activeUserID)
+        loadRecentScans()
+        statsManager.refreshStats(using: modelContext, activeUserID: activeUserManager.activeUserID)
+        GameStreakReminderService.shared.showLaunchReminderIfPossible()
+    }
+
+    private func loadRecentScans() {
+        var descriptor: FetchDescriptor<ScanRecord>
+
+        if let selectedUUID = activeUserManager.selectedUserUUID {
+            let selectedUserID = Optional(selectedUUID)
+            descriptor = FetchDescriptor<ScanRecord>(
+                predicate: #Predicate<ScanRecord> { record in
+                    record.userProfileID == selectedUserID
+                },
+                sortBy: [SortDescriptor(\.timestamp, order: .reverse)]
+            )
+        } else {
+            descriptor = FetchDescriptor<ScanRecord>(
+                sortBy: [SortDescriptor(\.timestamp, order: .reverse)]
+            )
+        }
+
+        descriptor.fetchLimit = 2
+
+        do {
+            recentScans = try modelContext.fetch(descriptor)
+        } catch {
+            recentScans = []
+            print("Failed loading recent scans- \(error.localizedDescription)")
+        }
+
+        didLoadRecentScans = true
+    }
+
+    @ViewBuilder
+    private var recentActivityContent: some View {
+        if !didLoadRecentScans {
+            Color.clear
+                .frame(maxWidth: .infinity)
+                .frame(height: 32)
+        } else if recentScans.isEmpty {
+            recentActivityEmptyState
+        } else {
+            VStack(spacing: 10) {
+                ForEach(recentScans, id: \.id) { record in
+                    HistoryRow(
+                        timestamp: dateFormatter.string(from: record.timestamp),
+                        verdict: record.displayVerdictLabel,
+                        imageData: record.imageData
+                    )
+                }
+            }
+        }
+    }
+
+    private var recentActivityEmptyState: some View {
+        Text("No scans yet")
+            .font(.subheadline)
+            .foregroundStyle(Color.ffTextMuted)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 32)
     }
 }
 

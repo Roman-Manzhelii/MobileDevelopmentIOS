@@ -11,42 +11,23 @@ import FoundationNetworking
 #endif
 
 struct AiclipseCheckResponse: Decodable {
-    let verdict: String
     let label: String
-    let confidence: Double
-    let modelVersion: String
-    let detectionToken: String
 
-    enum CodingKeys: String, CodingKey {
-        case verdict
-        case label
-        case confidence
-        case modelVersion = "model_version"
-        case detectionToken = "detection_token"
-    }
-
-    private var normalizedVerdict: String {
-        verdict.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
-    }
-
-    var isAIGenerated: Bool {
-        switch normalizedVerdict {
-        case "FAKE":
-            return true
-        case "REAL":
-            return false
-        default:
-            return label.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == "fake"
-        }
-    }
-
-    var aiProbability: Double {
-        let probability = isAIGenerated ? confidence : 1 - confidence
-        return min(max(probability, 0), 1)
+    private var normalizedLabel: String {
+        label.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
     }
 
     var displayLabel: String {
-        isAIGenerated ? "AI" : "Real"
+        switch normalizedLabel {
+        case "real":
+            return "Real"
+        case "suspicious":
+            return "Suspicious"
+        case "fake":
+            return "Fake"
+        default:
+            return label
+        }
     }
 }
 

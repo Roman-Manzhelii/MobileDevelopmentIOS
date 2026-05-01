@@ -10,6 +10,7 @@ import SwiftData
 
 @main
 struct FakeFinderApp: App {
+    @UIApplicationDelegateAdaptor(AppNotificationDelegate.self) private var appNotificationDelegate
     @StateObject private var activeUserManager = ActiveUserManager()
 
     private let modelContainer: ModelContainer

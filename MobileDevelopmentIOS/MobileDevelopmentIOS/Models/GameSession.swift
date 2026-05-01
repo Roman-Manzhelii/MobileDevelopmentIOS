@@ -17,19 +17,4 @@ class GameSession {
         self.totalSwipes = totalSwipes
         self.correctGuesses = correctGuesses
     }
-    
-    
-    func incrementCorrect() {
-            totalSwipes += 1
-            correctGuesses += 1
-        }
-    
-    func incrementIncorrect() {
-            totalSwipes += 1
-        }
-    
-    var accuracyScore: Double {
-            guard totalSwipes > 0 else { return 0.0 }
-            return (Double(correctGuesses) / Double(totalSwipes)) * 100
-        }
 }

@@ -8,6 +8,7 @@ struct StartupUserView: View {
 
     @State private var newUserName = ""
     @State private var createUserError = ""
+    @State private var isCreatingUser = false
 
     var body: some View {
         ZStack {
@@ -39,7 +40,7 @@ struct StartupUserView: View {
                     if profiles.isEmpty {
                         emptyState
                     } else {
-                        VStack(spacing: 10) {
+                        LazyVStack(spacing: 10) {
                             ForEach(profiles) { profile in
                                 Button {
                                     activeUserManager.selectUser(profile)
@@ -88,8 +89,10 @@ struct StartupUserView: View {
                                     )
                             )
 
-                        Button("Create User") {
-                            createUser()
+                        Button(isCreatingUser ? "Creating..." : "Create User") {
+                            Task {
+                                await createUser()
+                            }
                         }
                         .font(.headline.weight(.semibold))
                         .foregroundStyle(Color.ffTextPrimary)
@@ -104,6 +107,8 @@ struct StartupUserView: View {
                                 )
                         )
                         .buttonStyle(.plain)
+                        .disabled(isCreatingUser)
+                        .opacity(isCreatingUser ? 0.7 : 1)
 
                         if !createUserError.isEmpty {
                             Text(createUserError)
@@ -134,25 +139,32 @@ struct StartupUserView: View {
             )
     }
 
-    private func createUser() {
+    @MainActor
+    private func createUser() async {
+        guard !isCreatingUser else { return }
+
         let trimmedName = newUserName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedName.isEmpty else {
             createUserError = "Please enter a user name."
             return
         }
 
-        let profile = UserProfile(displayName: trimmedName, currentStreak: 1)
-        modelContext.insert(profile)
-        
+        isCreatingUser = true
+        createUserError = ""
+
         do {
-            try modelContext.save()
-            activeUserManager.selectUser(profile)
+            let store = UserProfileStore(modelContainer: modelContext.container)
+            let userID = try await store.createUser(displayName: trimmedName)
             newUserName = ""
-            createUserError = ""
+            isCreatingUser = false
+            activeUserManager.selectUser(id: userID)
+            return
         } catch {
             createUserError = "Could not create user. Please try again."
             print("Failed to create user- \(error.localizedDescription)")
         }
+
+        isCreatingUser = false
     }
 }
 

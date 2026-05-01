@@ -13,11 +13,8 @@ struct ProfileView: View {
     @EnvironmentObject private var activeUserManager: ActiveUserManager
     @Environment(\.modelContext) private var modelContext
     @StateObject private var statsManager = StatsManager()
+    @State private var profile: UserProfile?
     @AppStorage("haptics_enabled") private var hapticsEnabled = true
-
-    private var profile: UserProfile? {
-        activeUserManager.selectedProfile(using: modelContext)
-    }
 
     private var accuracyPercentText: String {
         "\(Int((statsManager.accuracyProgress * 100).rounded()))%"
@@ -26,11 +23,6 @@ struct ProfileView: View {
     private var displayName: String {
         guard let profile else { return "User" }
         return profile.displayName
-    }
-
-    private var levelText: String {
-        let level = max(1, ((profile?.imagesAnalyzed ?? 0) / 25) + 1)
-        return "\(level)"
     }
 
     private var metrics: [MetricItem] {
@@ -56,7 +48,10 @@ struct ProfileView: View {
                     .fill(Color.ffBorder)
                     .frame(height: 1)
 
-                userRow
+                HStack(alignment: .center, spacing: 10) {
+                    userRow
+                    hapticsButton
+                }
                 Button("Change User") {
                     activeUserManager.clearActiveUser()
                 }
@@ -83,30 +78,31 @@ struct ProfileView: View {
 
                 SectionLabel(title: "Metrics")
                 MetricsGrid(items: metrics)
-                
-                SectionLabel(title: "Settings")
-                hapticsButton
-
-                Text("All metrics come from SwiftData models.")
-                    .font(.caption2)
-                    .foregroundStyle(Color.ffTextMuted)
             }
             .padding(.horizontal, 18)
             .padding(.bottom, 20)
         }
-        .onAppear {
-            statsManager.refreshStats(using: modelContext, activeUserID: activeUserManager.activeUserID)
+        .task(id: activeUserManager.activeUserID) {
+            await refreshProfileDataAfterFirstFrame()
         }
     }
 
+    @MainActor
+    private func refreshProfileDataAfterFirstFrame() async {
+        await Task.yield()
+
+        profile = activeUserManager.selectedProfile(using: modelContext)
+        statsManager.refreshStats(using: modelContext, activeUserID: activeUserManager.activeUserID)
+    }
+
     private var userRow: some View {
-        HStack(alignment: .center, spacing: 14) {
+        HStack(alignment: .center, spacing: 16) {
             RoundedRectangle(cornerRadius: 12)
                 .fill(Color.ffElevated)
-                .frame(width: 62, height: 62)
+                .frame(width: 58, height: 58)
                 .overlay(
                     Image(systemName: "person.fill")
-                        .font(.title2)
+                        .font(.title2.weight(.semibold))
                         .foregroundStyle(Color.ffTextPrimary)
                 )
                 .overlay(
@@ -114,22 +110,15 @@ struct ProfileView: View {
                         .strokeBorder(Color.ffBorder, lineWidth: 1)
                 )
 
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 8) {
-                    Text(displayName)
-                        .font(.headline.weight(.semibold))
-                        .foregroundStyle(Color.ffTextPrimary)
-                    Badge(text: levelText)
-                }
-
-                Text("Current streak: \(profile?.currentStreak ?? 0) days")
-                    .font(.caption)
-                    .foregroundStyle(Color.ffTextMuted)
-            }
-
-            Spacer(minLength: 0)
+            Text(displayName)
+                .font(.title3.weight(.bold))
+                .foregroundStyle(Color.ffTextPrimary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+                .frame(maxWidth: .infinity, alignment: .center)
         }
         .padding(14)
+        .frame(maxWidth: .infinity, minHeight: 92)
         .background(
             RoundedRectangle(cornerRadius: 14)
                 .fill(Color.ffCard)
@@ -142,31 +131,25 @@ struct ProfileView: View {
 
     private var hapticsButton: some View {
         Button(action: toggleHaptics) {
-            HStack(spacing: 14) {
+            VStack(spacing: 8) {
                 Image(systemName: hapticsEnabled ? "iphone.radiowaves.left.and.right" : "iphone.slash")
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(hapticsEnabled ? Color.ffGold : Color.ffTextMuted)
-                    .frame(width: 44, height: 44)
+                    .frame(width: 40, height: 40)
                     .background(
                         RoundedRectangle(cornerRadius: 12, style: .continuous)
                             .fill(Color.ffElevated)
                     )
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Haptics")
-                        .font(.headline.weight(.semibold))
-                        .foregroundStyle(Color.ffTextPrimary)
-
-                    Text(hapticsEnabled ? "On for wrong guesses" : "Off")
-                        .font(.caption)
-                        .foregroundStyle(Color.ffTextMuted)
-                }
-
-                Spacer(minLength: 0)
-
-                Badge(text: hapticsEnabled ? "On" : "Off")
+                Text("Haptics \(hapticsEnabled ? "On" : "Off")")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Color.ffTextPrimary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
             }
-            .padding(14)
+            .padding(12)
+            .frame(width: 112)
+            .frame(minHeight: 92)
             .background(
                 RoundedRectangle(cornerRadius: 14)
                     .fill(Color.ffCard)
