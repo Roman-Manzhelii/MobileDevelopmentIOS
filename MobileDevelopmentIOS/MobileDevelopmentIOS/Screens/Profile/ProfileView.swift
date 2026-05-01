@@ -51,7 +51,10 @@ struct ProfileView: View {
                     .fill(Color.ffBorder)
                     .frame(height: 1)
 
-                userRow
+                HStack(alignment: .stretch, spacing: 10) {
+                    userRow
+                    hapticsButton
+                }
                 Button("Change User") {
                     activeUserManager.clearActiveUser()
                 }
@@ -78,9 +81,6 @@ struct ProfileView: View {
 
                 SectionLabel(title: "Metrics")
                 MetricsGrid(items: metrics)
-                
-                SectionLabel(title: "Settings")
-                hapticsButton
 
                 Text("All metrics come from SwiftData models.")
                     .font(.caption2)
@@ -98,7 +98,7 @@ struct ProfileView: View {
         HStack(alignment: .center, spacing: 16) {
             RoundedRectangle(cornerRadius: 12)
                 .fill(Color.ffElevated)
-                .frame(width: 66, height: 66)
+                .frame(width: 58, height: 58)
                 .overlay(
                     Image(systemName: "person.fill")
                         .font(.title2.weight(.semibold))
@@ -116,8 +116,8 @@ struct ProfileView: View {
                 .minimumScaleFactor(0.8)
                 .frame(maxWidth: .infinity, alignment: .center)
         }
-        .padding(16)
-        .frame(maxWidth: .infinity, minHeight: 98)
+        .padding(14)
+        .frame(maxWidth: .infinity, minHeight: 92)
         .background(
             RoundedRectangle(cornerRadius: 14)
                 .fill(Color.ffCard)
@@ -130,31 +130,24 @@ struct ProfileView: View {
 
     private var hapticsButton: some View {
         Button(action: toggleHaptics) {
-            HStack(spacing: 14) {
+            VStack(spacing: 8) {
                 Image(systemName: hapticsEnabled ? "iphone.radiowaves.left.and.right" : "iphone.slash")
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(hapticsEnabled ? Color.ffGold : Color.ffTextMuted)
-                    .frame(width: 44, height: 44)
+                    .frame(width: 40, height: 40)
                     .background(
                         RoundedRectangle(cornerRadius: 12, style: .continuous)
                             .fill(Color.ffElevated)
                     )
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Haptics")
-                        .font(.headline.weight(.semibold))
-                        .foregroundStyle(Color.ffTextPrimary)
-
-                    Text(hapticsEnabled ? "On for wrong guesses" : "Off")
-                        .font(.caption)
-                        .foregroundStyle(Color.ffTextMuted)
-                }
-
-                Spacer(minLength: 0)
-
-                Badge(text: hapticsEnabled ? "On" : "Off")
+                Text("Haptics \(hapticsEnabled ? "On" : "Off")")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Color.ffTextPrimary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
             }
-            .padding(14)
+            .padding(12)
+            .frame(width: 112, minHeight: 92)
             .background(
                 RoundedRectangle(cornerRadius: 14)
                     .fill(Color.ffCard)
