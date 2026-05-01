@@ -13,6 +13,7 @@ import UIKit
 struct DetectorView: View {
     @EnvironmentObject private var activeUserManager: ActiveUserManager
     @Environment(\.modelContext) private var modelContext
+    
 
     private enum PrimaryAction {
         case chooseImage
