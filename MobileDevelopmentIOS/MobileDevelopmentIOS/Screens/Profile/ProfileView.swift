@@ -28,11 +28,6 @@ struct ProfileView: View {
         return profile.displayName
     }
 
-    private var levelText: String {
-        let level = max(1, ((profile?.imagesAnalyzed ?? 0) / 25) + 1)
-        return "\(level)"
-    }
-
     private var metrics: [MetricItem] {
         [
             MetricItem(value: "\(profile?.imagesAnalyzed ?? 0)", label: "Images Analyzed"),
@@ -100,13 +95,13 @@ struct ProfileView: View {
     }
 
     private var userRow: some View {
-        HStack(alignment: .center, spacing: 14) {
+        HStack(alignment: .center, spacing: 16) {
             RoundedRectangle(cornerRadius: 12)
                 .fill(Color.ffElevated)
-                .frame(width: 62, height: 62)
+                .frame(width: 66, height: 66)
                 .overlay(
                     Image(systemName: "person.fill")
-                        .font(.title2)
+                        .font(.title2.weight(.semibold))
                         .foregroundStyle(Color.ffTextPrimary)
                 )
                 .overlay(
@@ -114,22 +109,15 @@ struct ProfileView: View {
                         .strokeBorder(Color.ffBorder, lineWidth: 1)
                 )
 
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 8) {
-                    Text(displayName)
-                        .font(.headline.weight(.semibold))
-                        .foregroundStyle(Color.ffTextPrimary)
-                    Badge(text: levelText)
-                }
-
-                Text("Current streak: \(profile?.currentStreak ?? 0) days")
-                    .font(.caption)
-                    .foregroundStyle(Color.ffTextMuted)
-            }
-
-            Spacer(minLength: 0)
+            Text(displayName)
+                .font(.title3.weight(.bold))
+                .foregroundStyle(Color.ffTextPrimary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+                .frame(maxWidth: .infinity, alignment: .center)
         }
-        .padding(14)
+        .padding(16)
+        .frame(maxWidth: .infinity, minHeight: 98)
         .background(
             RoundedRectangle(cornerRadius: 14)
                 .fill(Color.ffCard)
