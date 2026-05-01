@@ -29,21 +29,14 @@ struct HistoryView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                HStack(alignment: .top) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Scan History")
-                            .font(.title2.weight(.bold))
-                            .foregroundStyle(Color.ffTextPrimary)
-                        Text("All of your previous scans")
-                            .font(.subheadline)
-                            .foregroundStyle(Color.ffTextMuted)
-                    }
-                    Spacer(minLength: 12)
+                ScreenHeader(
+                    title: "Scan History",
+                    subtitle: "Review and manage your previous scans"
+                ) {
                     OutlineButton(title: "Clear All") {
                         clearAll()
                     }
                 }
-                .padding(.top, 8)
 
                 Rectangle()
                     .fill(Color.ffBorder)

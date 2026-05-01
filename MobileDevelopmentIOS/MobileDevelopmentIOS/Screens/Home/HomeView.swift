@@ -37,10 +37,10 @@ struct HomeView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                Text("Welcome back")
-                    .font(.title2.weight(.bold))
-                    .foregroundStyle(Color.ffTextPrimary)
-                    .padding(.top, 8)
+                ScreenHeader(
+                    title: "Welcome back",
+                    subtitle: "Quick actions and recent scan activity"
+                )
 
                 Rectangle()
                     .fill(Color.ffBorder)

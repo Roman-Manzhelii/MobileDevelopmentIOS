@@ -47,15 +47,10 @@ struct ProfileView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Profile & Stats")
-                        .font(.title2.weight(.bold))
-                        .foregroundStyle(Color.ffTextPrimary)
-                    Text("Game settings and progress")
-                        .font(.caption)
-                        .foregroundStyle(Color.ffTextMuted)
-                }
-                .padding(.top, 8)
+                ScreenHeader(
+                    title: "Profile & Stats",
+                    subtitle: "Game settings and progress"
+                )
 
                 Rectangle()
                     .fill(Color.ffBorder)
