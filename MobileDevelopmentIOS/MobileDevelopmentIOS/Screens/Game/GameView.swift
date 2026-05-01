@@ -80,21 +80,24 @@ struct GameView: View {
     }
 
     private var instructionRow: some View {
-        HStack(spacing: 10) {
-            InstructionPill(
+        HStack {
+            SwipeDirectionLabel(
                 title: "Fake",
-                subtitle: "Swipe left",
                 systemImage: "arrow.left",
-                tint: .ffRed
+                tint: .ffRed,
+                side: .left
             )
 
-            InstructionPill(
+            Spacer(minLength: 12)
+
+            SwipeDirectionLabel(
                 title: "Real",
-                subtitle: "Swipe right",
                 systemImage: "arrow.right",
-                tint: .ffGreen
+                tint: .ffGreen,
+                side: .right
             )
         }
+        .padding(.horizontal, 6)
     }
 
     @ViewBuilder
@@ -345,43 +348,41 @@ struct GameView: View {
     }
 }
 
-private struct InstructionPill: View {
+private struct SwipeDirectionLabel: View {
+    enum Side {
+        case left
+        case right
+    }
+
     let title: String
-    let subtitle: String
     let systemImage: String
     let tint: Color
+    let side: Side
 
     var body: some View {
-        HStack(spacing: 10) {
-            Image(systemName: systemImage)
-                .font(.headline.weight(.bold))
-                .foregroundStyle(tint)
-                .frame(width: 34, height: 34)
-                .background(tint.opacity(0.14), in: Circle())
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.headline.weight(.semibold))
-                    .foregroundStyle(Color.ffTextPrimary)
-
-                Text(subtitle)
-                    .font(.caption)
-                    .foregroundStyle(Color.ffTextMuted)
+        HStack(spacing: 7) {
+            if side == .right {
+                titleText
             }
 
-            Spacer(minLength: 0)
+            Image(systemName: systemImage)
+                .font(.caption.weight(.bold))
+                .foregroundStyle(tint)
+                .frame(width: 22, height: 22)
+                .background(tint.opacity(0.12), in: Circle())
+
+            if side == .left {
+                titleText
+            }
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(Color.ffCard)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(Color.ffBorder, lineWidth: 1)
-        )
+        .foregroundStyle(tint)
+    }
+
+    private var titleText: some View {
+        Text(title)
+            .font(.caption.weight(.semibold))
+            .textCase(.uppercase)
+            .lineLimit(1)
     }
 }
 
